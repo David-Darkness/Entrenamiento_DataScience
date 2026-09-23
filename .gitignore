@@ -1,1 +1,23 @@
 dataset/
+
+# IDEs
+.idea/
+.vscode/
+
+# Dependencias
+node_modules/
+
+# Archivos de compilación
+dist/
+build/
+
+# Logs
+logs/
+*.log
+
+# Configuración local
+.env
+
+# Archivos temporales del sistema
+.DS_Store
+Thumbs.db
