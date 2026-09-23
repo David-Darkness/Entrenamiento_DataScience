@@ -57,3 +57,31 @@ print("\nCantidad de objetos por clase:")
 
 for class_id, count in class_counts.items():
     print(f"{class_id}: {data['names'][class_id]} → {count}")
+
+
+
+# Contar cuántas imágenes contienen cada clase
+images_per_class = {class_id: 0 for class_id in range(data["nc"])}
+
+for labels_folder in [train_labels, valid_labels, test_labels]:
+
+    for label_file in labels_folder.glob("*.txt"):
+
+        classes_in_image = set()
+
+        with open(label_file, "r", encoding="utf-8") as file:
+            for line in file:
+
+                if line.strip():
+                    class_id = int(line.split()[0])
+                    classes_in_image.add(class_id)
+
+        # Contamos la imagen una sola vez por cada clase
+        for class_id in classes_in_image:
+            images_per_class[class_id] += 1
+
+
+print("\nCantidad de imágenes que contienen cada clase:")
+
+for class_id, count in images_per_class.items():
+    print(f"{class_id}: {data['names'][class_id]} → {count}")
