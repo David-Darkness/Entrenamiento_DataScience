@@ -85,3 +85,36 @@ print("\nCantidad de imágenes que contienen cada clase:")
 
 for class_id, count in images_per_class.items():
     print(f"{class_id}: {data['names'][class_id]} → {count}")
+
+
+
+print("\nDistribución de imágenes por clase y conjunto:")
+
+splits = {
+    "Train": train_labels,
+    "Valid": valid_labels,
+    "Test": test_labels
+}
+
+for split_name, labels_folder in splits.items():
+
+    split_counts = {class_id: 0 for class_id in range(data["nc"])}
+
+    for label_file in labels_folder.glob("*.txt"):
+
+        classes_in_image = set()
+
+        with open(label_file, "r", encoding="utf-8") as file:
+            for line in file:
+
+                if line.strip():
+                    class_id = int(line.split()[0])
+                    classes_in_image.add(class_id)
+
+        for class_id in classes_in_image:
+            split_counts[class_id] += 1
+
+    print(f"\n{split_name}:")
+
+    for class_id, count in split_counts.items():
+        print(f"  {data['names'][class_id]} → {count}")
