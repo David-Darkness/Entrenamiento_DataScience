@@ -161,3 +161,82 @@ for split_name, (images_folder, labels_folder) in splits_paths.items():
     print(f"  Etiquetas: {len(labels)}")
     print(f"  Imágenes sin etiqueta: {len(images_without_labels)}")
     print(f"  Etiquetas sin imagen: {len(labels_without_images)}")
+
+
+print("\n" + "=" * 50)
+print("VALIDACIÓN DEL CONTENIDO DE LAS ANOTACIONES")
+print("=" * 50)
+
+invalid_class_ids = []
+invalid_coordinates = []
+malformed_lines = []
+empty_labels = []
+
+for split_name, (_, labels_folder) in splits_paths.items():
+
+    for label_file in labels_folder.glob("*.txt"):
+
+        with open(label_file, "r", encoding="utf-8") as file:
+            lines = [line.strip() for line in file if line.strip()]
+
+        # Archivo de etiquetas vacío
+        if not lines:
+            empty_labels.append((split_name, label_file.name))
+            continue
+
+        for line_number, line in enumerate(lines, start=1):
+
+            parts = line.split()
+
+            # Una anotación YOLO debe tener exactamente 5 valores
+            if len(parts) != 5:
+                malformed_lines.append(
+                    (split_name, label_file.name, line_number, line)
+                )
+                continue
+
+            try:
+                class_id = int(parts[0])
+                x_center = float(parts[1])
+                y_center = float(parts[2])
+                width = float(parts[3])
+                height = float(parts[4])
+            except ValueError:
+                malformed_lines.append(
+                    (split_name, label_file.name, line_number, line)
+                )
+                continue
+
+            # Validar ID de clase
+            if class_id < 0 or class_id >= data["nc"]:
+                invalid_class_ids.append(
+                    (split_name, label_file.name, line_number, class_id)
+                )
+
+            # Validar coordenadas
+            coordinates = [x_center, y_center, width, height]
+
+            if any(value < 0 or value > 1 for value in coordinates):
+                invalid_coordinates.append(
+                    (split_name, label_file.name, line_number, coordinates)
+                )
+
+print(f"\nArchivos de etiquetas vacíos: {len(empty_labels)}")
+
+if empty_labels:
+    print("\nArchivos vacíos encontrados:")
+    for split_name, file_name in empty_labels:
+        print(f"  [{split_name}] {file_name}")
+
+
+print(f"\nLíneas con formato incorrecto: {len(malformed_lines)}")
+
+if malformed_lines:
+    print("\nLíneas incorrectas encontradas:")
+    for split_name, file_name, line_number, line in malformed_lines:
+        print(f"  [{split_name}] {file_name} | línea {line_number}")
+        print(f"      Contenido: {line}")
+
+
+print(f"\nIDs de clase inválidos: {len(invalid_class_ids)}")
+print(f"Coordenadas fuera de rango: {len(invalid_coordinates)}")
