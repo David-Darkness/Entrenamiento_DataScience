@@ -118,3 +118,46 @@ for split_name, labels_folder in splits.items():
 
     for class_id, count in split_counts.items():
         print(f"  {data['names'][class_id]} → {count}")
+
+print("\n" + "=" * 50)
+print("VALIDACIÓN DE IMÁGENES Y ETIQUETAS")
+print("=" * 50)
+
+splits_paths = {
+    "Train": (
+        DATASET_DIR / "train" / "images",
+        DATASET_DIR / "train" / "labels"
+    ),
+    "Valid": (
+        DATASET_DIR / "valid" / "images",
+        DATASET_DIR / "valid" / "labels"
+    ),
+    "Test": (
+        DATASET_DIR / "test" / "images",
+        DATASET_DIR / "test" / "labels"
+    )
+}
+
+image_extensions = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
+
+for split_name, (images_folder, labels_folder) in splits_paths.items():
+
+    images = {
+        file.stem
+        for file in images_folder.iterdir()
+        if file.suffix.lower() in image_extensions
+    }
+
+    labels = {
+        file.stem
+        for file in labels_folder.glob("*.txt")
+    }
+
+    images_without_labels = images - labels
+    labels_without_images = labels - images
+
+    print(f"\n{split_name}:")
+    print(f"  Imágenes: {len(images)}")
+    print(f"  Etiquetas: {len(labels)}")
+    print(f"  Imágenes sin etiqueta: {len(images_without_labels)}")
+    print(f"  Etiquetas sin imagen: {len(labels_without_images)}")
