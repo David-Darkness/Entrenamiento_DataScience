@@ -40,7 +40,10 @@ results = model.val(
     device=0,
     workers=0,
     plots=True,
-    verbose=True
+    verbose=True,
+    project=str(PROJECT_DIR / "evaluation" / "yolov8"),
+    name="test_final",
+    exist_ok=False
 )
 
 print("\n==============================================")

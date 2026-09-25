@@ -1,8 +1,11 @@
 from pathlib import Path
 import yaml
 
+# Directorio raíz del proyecto
+PROJECT_DIR = Path(__file__).resolve().parent.parent
+
 # Ubicación del dataset
-DATASET_DIR = Path("../dataset")
+DATASET_DIR = PROJECT_DIR / "dataset"
 
 # Archivo de configuración
 DATA_YAML = DATASET_DIR / "data.yaml"
@@ -44,6 +47,9 @@ test_labels = DATASET_DIR / "test" / "labels"
 for labels_folder in [train_labels, valid_labels, test_labels]:
 
     for label_file in labels_folder.glob("*.txt"):
+
+        if not label_file.is_file():
+            continue
 
         with open(label_file, "r", encoding="utf-8") as file:
             for line in file:
