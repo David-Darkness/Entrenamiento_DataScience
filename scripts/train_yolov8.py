@@ -5,7 +5,7 @@ from ultralytics import YOLO
 # ============================================================
 
 # Modelo base preentrenado
-model = YOLO("../yolov8n.pt")
+model = YOLO("../models/base/yolov8n.pt")
 
 # Entrenamiento
 results = model.train(
@@ -33,7 +33,7 @@ results = model.train(
     save_period=1,
 
     # Nombre del experimento
-    project="../runs/smartroad",
+    project="../experiments/yolov8",
     name="yolov8n_20epochs",
 
     # Early stopping
@@ -54,7 +54,7 @@ print("ENTRENAMIENTO FINALIZADO")
 print("=" * 60)
 
 print("Resultados guardados en:")
-print("../runs/smartroad/yolov8n_20epochs")
+print("../experiments/yolov8/yolov8n_20epochs")
 
 print("\nArchivos importantes generados por Ultralytics:")
 print("- results.csv")
