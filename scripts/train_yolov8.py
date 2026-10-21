@@ -9,7 +9,7 @@ model = YOLO("../models/base/yolov8n.pt")
 
 # Entrenamiento
 results = model.train(
-    data="../dataset/data.yaml",
+    data="C:/Users/omarg/Documents/GitHub/Entrenamiento_DataScience/dataset/data.yaml",
 
     # Entrenamiento
     epochs=20,
