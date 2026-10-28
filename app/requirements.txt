@@ -1,0 +1,17 @@
+# Dependencias específicas de la aplicación web SmartRoad AI.
+# PyTorch, torchvision, torchaudio, CUDA y Ultralytics ya deben estar
+# instalados en el entorno de entrenamiento; no se reinstalan aquí.
+
+streamlit>=1.30.0
+pandas>=2.0.0
+plotly>=5.18.0
+pillow>=10.0.0
+numpy>=1.26.0
+opencv-python>=4.8.0
+
+# Dependencias de Ultralytics/entorno que deben estar presentes
+# (no se reinstalan para no alterar la configuración CUDA):
+# torch>=2.0.0
+# torchvision>=0.15.0
+# torchaudio>=2.0.0
+# ultralytics>=8.0.0
