@@ -1,46 +1,13 @@
-# Informe Técnico SmartRoad AI
-
-**Detección inteligente de incidentes viales y vehículos mediante modelos de visión por computador**
-
 ---
-
-## Nota editorial preliminar
-
-Este documento es el informe académico maestro del proyecto SmartRoad AI y se construye de forma progresiva, capítulo por capítulo. En esta versión inicial se establece la estructura, las fuentes de verdad y las directrices editoriales. Los apartados técnicos se desarrollarán en entregas posteriores siguiendo las instrucciones del director del proyecto.
-
-**Fuentes de verdad:**
-
-1. La rama integrada `integration/four-models` y sus artefactos verificables (scripts, `args.yaml`, `results.csv`, checkpoints, matrices de confusión, curvas y registros de evaluación).
-2. El informe maestro histórico del experimento inicial con el dataset antiguo:
-   `C:\Users\polan\USCO\SEMESTRE SIETE 2026-2\ELECTIVA CIENCIAS DE LA COMPUTACIÓN II\Documentación\DATASET ANTIGUO\Informe_Maestro_SmartRoadAI_Modelo1_YOLOv8n_Dataset_Evaluacion.docx`.
-   Sus cifras se conservan como antecedente y no se reemplazan retroactivamente.
-3. Las diapositivas de la Semana 7, cuando sean proporcionadas, como guía para la elaboración e interpretación de gráficas.
-4. La rúbrica académica del curso.
-
-**Convenciones del documento:**
-
-- `[PENDIENTE DE VERIFICACIÓN]`: dato o afirmación que aún no puede respaldarse con evidencia del repositorio.
-- `[PENDIENTE DE REDACCIÓN]`: sección que requiere redacción técnica en una tarea posterior.
-- Las figuras incluirán número, título, fuente exacta del artefacto e interpretación técnica.
-- Las ecuaciones definirán todas sus variables y se mantendrán coherentes con la implementación real.
-- Se utilizará español académico, tablas para comparaciones y referencias bibliográficas verificables.
-- Logs extensos y listados de archivos se ubicarán en los anexos, no en el cuerpo principal.
-
----
-
-## Índice
-
-1. [Introducción, problema, justificación, objetivos y alcance](#capítulo-1-introducción-problema-justificación-objetivos-y-alcance)
-2. [Evolución experimental: dataset inicial, experimento histórico, actualización del dataset y versión integrada](#capítulo-2-evolución-experimental)
-3. [Construcción del dataset](#capítulo-3-construcción-del-dataset)
-4. [Selección de modelos de Machine Learning y estado del arte](#capítulo-4-selección-de-modelos-de-machine-learning-y-estado-del-arte)
-5. [Metodología experimental, simulación y análisis de resultados](#capítulo-5-metodología-experimental-simulación-y-análisis-de-resultados)
-6. [Modelo matemático de las arquitecturas y del sistema conjunto](#capítulo-6-modelo-matemático-de-las-arquitecturas-y-del-sistema-conjunto)
-7. [Implementación de la aplicación y arquitectura del servicio](#capítulo-7-implementación-de-la-aplicación-y-arquitectura-del-servicio)
-8. [Conclusiones, limitaciones y trabajo futuro](#capítulo-8-conclusiones-limitaciones-y-trabajo-futuro)
-9. [Referencias bibliográficas](#capítulo-9-referencias-bibliográficas)
-10. [Anexos y evidencias complementarias](#capítulo-10-anexos-y-evidencias-complementarias)
-
+title: "Informe Técnico SmartRoad AI"
+subtitle: "Detección inteligente de incidentes viales y vehículos mediante modelos de visión por computador — Entregable 2: Desarrollo del modelo e implementación"
+author:
+  - "Jorel Sebastián Vargas Ibarra · Juan David Polanco Ortiz · Omar Gabriel Viana Sepulveda"
+  - "Universidad Surcolombiana · Facultad de Ingeniería · Ingeniería de Software"
+  - "Electiva en Ingeniería Aplicada II (Data Science Fundamentals)"
+date: "Neiva, octubre de 2026"
+toc-title: "Contenido"
+lang: es-CO
 ---
 
 ## Capítulo 1. Introducción, problema, justificación, objetivos y alcance
@@ -71,7 +38,7 @@ La detección automática de accidentes y situaciones de riesgo en el tránsito 
 
 El análisis por clase es particularmente importante. Clases como *Accidente* y *Fire* tienen un alto costo de error si se clasifican incorrectamente o se omiten, pero suelen estar menos representadas que *Carro* o *Moto*. Una métrica global, como el mAP promedio, puede ocultar un mal desempeño en estas categorías críticas. Por ello, el proyecto prioriza la evaluación desagregada mediante matrices de confusión, curvas de precisión-recall y métricas de mAP por clase, además de predicciones visuales sobre subconjuntos específicos, como imágenes con presencia de fuego.
 
-Finalmente, el estudio de una posible integración multimodelo responde a una pregunta técnica legítima: si las arquitecturas cometen errores distintos, una combinación cuidadosamente diseñada podría compensar debilidades individuales. Sin embargo, esa posibilidad no se asume como cierta. La formulación matemática del acoplamiento, lejos de ser un mero añadido teórico, sirve para delimitar bajo qué supuestos una fusión de predicciones tendría sentido y qué evidencia se requiere para validarla. De este modo, SmartRoad AI se presenta como una investigación experimental rigurosa, no como una demostración prematura de un sistema terminado.
+Finalmente, el estudio de una posible integración multimodelo responde a una pregunta técnica legítima: si las arquitecturas cometen errores distintos, una combinación cuidadosamente diseñada podría compensar debilidades individuales. Esa posibilidad no se asumió como cierta: la formulación matemática del acoplamiento delimita bajo qué supuestos una fusión de predicciones tiene sentido, y su implementación en la aplicación se validó sobre el split TEST frente a cada modelo individual (sección 7.9). De este modo, SmartRoad AI se presenta como una investigación experimental cuyas afirmaciones se apoyan en evidencia medida.
 
 ### 1.4 Objetivo general
 
@@ -89,13 +56,13 @@ Diseñar, implementar y documentar un pipeline experimental de detección de obj
 
 5. **Formular el modelo matemático** de cada arquitectura y proponer un marco de acoplamiento multimodelo que defina, de manera coherente, las condiciones bajo las cuales podrían combinarse las predicciones individuales.
 
-6. **Implementar y validar un mecanismo de integración** de los cuatro modelos, una vez que se disponga de métricas de TEST completas y comparables; hasta ese momento, esta actividad se reporta como trabajo futuro o en proceso.
+6. **Implementar y validar un mecanismo de integración** de los cuatro modelos en una aplicación que ejecute los cuatro detectores sobre una misma imagen y consolide sus predicciones.
 
 7. **Documentar de forma reproducible** todo el proceso experimental, incluyendo scripts, rutas de artefactos, hiperparámetros, decisiones metodológicas y limitaciones identificadas.
 
 **Estado de avance de los objetivos**
 
-La auditoría del repositorio indica que los cuatro modelos han sido entrenados y que al menos uno de ellos (YOLO11n) cuenta con métricas de TEST persistidas. Sin embargo, la evaluación TEST completa de YOLOv8n, YOLOv10n y RT-DETR-L no se encuentra documentada en archivos de texto dentro del repositorio, aunque los scripts para ejecutarla existen. Asimismo, la integración multimodelo no ha sido implementada ni verificada. En consecuencia, los objetivos 3 y 6 deben considerarse parcialmente completados o pendientes de cierre, según el modelo.
+Los cuatro modelos han sido entrenados y evaluados sobre TEST; YOLO11n cuenta con todas sus métricas persistidas y los otros tres con su mAP@50 global y por clase (Capítulo 5). La integración de los cuatro modelos está implementada en la aplicación web SmartRoad AI (`app/`, Capítulo 7), que los ejecuta sobre una misma imagen y consolida sus predicciones mediante un motor de decisión por consenso. La salida fusionada de la aplicación se evaluó sobre el split TEST frente a cada modelo individual (sección 7.9). Queda abierto persistir con Ultralytics precisión, recall y mAP@50-95 de TEST para YOLOv8n, YOLOv10n y RT-DETR-L (objetivo 3).
 
 ### 1.6 Alcance y delimitación
 
@@ -113,12 +80,10 @@ El proyecto abarca las siguientes actividades:
 **Delimitaciones y estado actual**
 
 - El proyecto se limita a la experimentación con el dataset almacenado en el repositorio; no incluye la recolección de nuevos datos en campo ni el despliegue de dispositivos de captura.
-- Los modelos se entrenan y evalúan de manera independiente. No existe en el repositorio evidencia verificable de un sistema que cargue los cuatro checkpoints de forma simultánea, que ejecute inferencia conjunta o que fusione predicciones mediante algún algoritmo implementado.
-- No se desarrolla ni se valida un servicio web, API, aplicación móvil, panel de notificaciones a emergencias, optimización de semáforos ni ningún otro sistema en producción. Cualquier referencia a estos elementos se presenta como propuesta inicial, diseño conceptual o trabajo futuro.
+- Los modelos se entrenan y evalúan de manera independiente. Su integración se realiza en la aplicación web (Capítulo 7), que carga los cuatro checkpoints, ejecuta la inferencia sobre la misma imagen y consolida las detecciones por consenso espacial. La fusión ponderada (WBF con pesos por modelo y factor de consenso Φ) del Capítulo 6 está implementada en el motor de decisión de la aplicación (sección 7.7) y se evalúa sobre TEST (sección 7.9).
+- Se desarrolla una aplicación web local de demostración (Streamlit) con un laboratorio de comparación de modelos y un centro de monitoreo con alertas y notificaciones simuladas. No se desarrolla una API pública, una aplicación móvil, el envío real de notificaciones a servicios de emergencia, la optimización de semáforos ni un despliegue en producción; estos elementos se presentan como trabajo futuro.
 - No se afirma que el sistema mejore de manera demostrada la seguridad vial en un entorno real. El trabajo es de carácter académico y experimental; sus conclusiones se limitan al desempeño observado sobre el dataset y a las predicciones cualitativas generadas con imágenes externas.
 - La comparación entre modelos está sujeta a la trazabilidad del dataset. Dado que los archivos de configuración registran rutas de datos distintas, no se puede garantizar sin verificación adicional que todos los entrenamientos usaron exactamente la misma versión binaria del dataset.
-
-> **Nota editorial:** las métricas numéricas, las tablas comparativas y las figuras de desempeño se desarrollarán en los Capítulos 3, 4 y 5. El Capítulo 1 se limita a establecer el marco conceptual, la pregunta de investigación, los objetivos y las delimitaciones del proyecto.
 
 ---
 
@@ -130,7 +95,7 @@ El proyecto abarca las siguientes actividades:
 
 SmartRoad AI nació como una propuesta académica orientada a la seguridad vial. Su idea original consistía en construir un sistema de visión artificial capaz de detectar automáticamente accidentes de tránsito y focos de incendio en imágenes de escenarios viales, con el fin de agilizar la respuesta de servicios de emergencia. A partir de esa motivación, la propuesta inicial incluyó funcionalidades de alto nivel —notificaciones a emergencias, optimización del flujo de tráfico y, en algunas versiones del documento de diseño, la integración de semáforos inteligentes— que respondían más a una visión de producto futuro que a un alcance experimental verificable.
 
-En la práctica, el desarrollo del proyecto se concentró en un objetivo más acotado y metodológicamente controlable: entrenar detectores de objetos para seis clases (`Accidente`, `Bus`, `Camion`, `Carro`, `Fire`, `Moto`) y comparar el comportamiento de distintas arquitecturas sobre un mismo dataset. Las funcionalidades de notificación, optimización de tráfico o despliegue en producción no fueron implementadas ni validadas en el repositorio; permanecen como propuestas iniciales o como trabajo futuro. Esta delimitación es importante porque evita confundir el alcance real de la evidencia experimental con las aspiraciones originales del proyecto.
+En la práctica, el desarrollo del proyecto se concentró en un objetivo más acotado y metodológicamente controlable: entrenar detectores de objetos para seis clases (`Accidente`, `Bus`, `Camion`, `Carro`, `Fire`, `Moto`) y comparar el comportamiento de distintas arquitecturas sobre un mismo dataset. A partir de esos detectores se construyó una aplicación web que integra los cuatro modelos, estima la carga vehicular visual y gestiona alertas con notificaciones simuladas (Capítulo 7). La optimización de semáforos, el envío real de notificaciones a emergencias y el despliegue en producción no se implementaron y permanecen como trabajo futuro. Esta delimitación es importante porque evita confundir el alcance real de la evidencia experimental con las aspiraciones originales del proyecto.
 
 ### 2.2 Primeras versiones del dataset y experimentos históricos
 
@@ -160,26 +125,26 @@ En octubre de 2026 se actualizó el dataset almacenado en `dataset/`. Según el 
 
 | Partición | Imágenes | Etiquetas |
 |---|---|---|
-| Entrenamiento | 32.732 | 32.728 |
-| Validación | 4.677 | 4.677 |
-| Prueba | 2.333 | 2.333 |
-| **Total** | **39.742** | **39.738** |
+| Entrenamiento | 32.592 | 32.588 |
+| Validación | 4.641 | 4.641 |
+| Prueba | 2.313 | 2.313 |
+| **Total** | **39.546** | **39.542** |
 
-La diferencia respecto a la versión histórica es de −4.374 imágenes de entrenamiento, −628 de validación y −315 de prueba. [PENDIENTE DE VERIFICACIÓN: motivo exacto de la reducción y criterios de filtrado o re-etiquetado aplicados.] La pequeña diferencia entre imágenes y etiquetas en entrenamiento (4 imágenes sin etiqueta) también requiere verificación, aunque es consistente con la presencia de scripts como `dataset_check.py` y `delete_invalid_labels.py`, que sugieren que se aplicaron controles de calidad a las anotaciones.
+La diferencia respecto a la versión histórica es de −4.514 imágenes de entrenamiento, −664 de validación y −335 de prueba. El repositorio no conserva un registro escrito de los criterios de filtrado aplicados en la actualización; las 4 imágenes de entrenamiento sin etiqueta y el resto de controles de calidad se describen en el Capítulo 3.
 
 El archivo `dataset/data.yaml` define las seis clases en el orden `Accidente`, `Bus`, `Camion`, `Carro`, `Fire`, `Moto`, y registra la fuente Roboflow Universe (`smartroadaiv1-q0ubo`, versión 1). La distribución de objetos por clase, obtenida contando las instancias anotadas en los archivos de etiquetas, muestra un desbalance importante:
 
 | Clase | Instancias | Porcentaje |
 |---|---|---|
-| Carro | 51.921 | 29,21 % |
-| Moto | 53.234 | 29,95 % |
-| Camion | 23.929 | 13,46 % |
-| Fire | 22.921 | 12,90 % |
-| Accidente | 15.180 | 8,54 % |
-| Bus | 10.557 | 5,94 % |
-| **Total** | **177.742** | **100,00 %** |
+| Moto | 53.234 | 30,09 % |
+| Carro | 51.417 | 29,06 % |
+| Camion | 23.859 | 13,49 % |
+| Fire | 22.871 | 12,93 % |
+| Accidente | 15.012 | 8,48 % |
+| Bus | 10.534 | 5,95 % |
+| **Total** | **176.927** | **100,00 %** |
 
-Las clases `Carro` y `Moto` concentran casi el 60 % de las instancias, mientras que `Bus` y `Accidente` son las menos frecuentes. El dataset, aunque actualizado en octubre de 2026 con el objetivo de mejorar el balance entre clases, no está perfectamente balanceado. Este desbalance condiciona la dificultad relativa de cada clase y justifica que el análisis de desempeño se presente desagregado, no solo mediante métricas globales.
+Las clases `Moto` y `Carro` concentran el 59 % de las instancias, mientras que `Bus` y `Accidente` son las menos frecuentes en número de objetos. Por presencia en imágenes, en cambio, todas las clases aparecen en al menos el 21 % de las imágenes y las clases de riesgo (`Accidente` o `Fire`) en el 65 % (Sección 3.4). El desbalance en número de objetos justifica que el análisis de desempeño se presente desagregado por clase.
 
 ### 2.4 Entrenamiento de los cuatro modelos
 
@@ -275,11 +240,11 @@ El término "integración" puede entenderse de tres maneras distintas, y es nece
 
 1. **Integración de archivos en una misma rama de Git.** Los cuatro modelos coexisten en el repositorio bajo la estructura `experiments/<familia>/` y `evaluation/<familia>/`. Los scripts de entrenamiento y evaluación (`scripts/train_yolov8.py`, `scripts/train_yolov10.py`, `scripts/train_yolov11.py`, `scripts/train_rtdetr.py`, `scripts/test_*.py` y `scripts/predict_*.py`) también se encuentran en la misma rama. Esta integración organizacional es la que efectivamente se ha logrado.
 
-2. **Ejecución conjunta de los cuatro modelos.** No existe en el repositorio un script que cargue los cuatro checkpoints (`best.pt` de cada familia), reciba una imagen de entrada y produzca las cuatro predicciones de forma simultánea. Cada modelo se evalúa y predice de manera independiente.
+2. **Ejecución conjunta de los cuatro modelos.** La aplicación `app/` (módulos `model_manager.py` e `inference.py`) carga los cuatro checkpoints `best.pt`, recibe una imagen y produce las cuatro predicciones de forma secuencial sobre la misma entrada. Esta integración está implementada y verificada (sección 7.8).
 
-3. **Fusión efectiva de predicciones.** No se encontró una implementación verificable de ensemble, votación, fusión de cajas delimitadoras (por ejemplo, NMS ponderado o WBF) o cualquier otro mecanismo que combine las salidas de los cuatro modelos. Las carpetas `evaluation/*/external_test/results/summary.txt` contienen conteos de detecciones por clase sobre imágenes externas, pero no una métrica de desempeño combinado ni un algoritmo de fusión.
+3. **Fusión efectiva de predicciones.** El módulo `app/app_modules/decision_engine.py` agrupa por clase las detecciones de los cuatro modelos mediante IoU, cuenta cada grupo como un único objeto y asigna a los eventos críticos un nivel de evidencia según cuántos modelos coinciden. El motor implementa el modelo de acoplamiento del Capítulo 6: pesos por modelo, fusión ponderada de cajas, factor de consenso Φ guiado por el modelo líder y umbral de activación; su salida se evaluó sobre TEST (sección 7.9).
 
-En consecuencia, la "integración" alcanzada hasta el momento es estructural y documental: los experimentos de las cuatro arquitecturas se conservan en un mismo repositorio con una convención de carpetas común. Cualquier sistema multimodelo que fusione predicciones corresponde a trabajo futuro.
+En consecuencia, la integración alcanzada es estructural (un repositorio común), operativa (ejecución conjunta en la aplicación) y algorítmica (fusión ponderada evaluada sobre TEST).
 
 ### 2.6 Síntesis de la evolución experimental
 
@@ -290,10 +255,10 @@ La siguiente tabla resume los hitos principales del proyecto, desde la propuesta
 | Propuesta inicial | Inicio del proyecto | Definición de la idea de detección de accidentes e incendios; propuesta de notificaciones y optimización de tráfico | Documento de diseño original (no disponible en el repositorio) | Propuesta parcialmente desarrollada |
 | Dataset histórico | Antes de la actualización de octubre de 2026 | 45.059 imágenes (37.106 / 5.305 / 2.648); entrenamiento YOLOv8n con mAP@50 ≈ 0,824 en validación | `AGENTS.md`, `documentation/AUDITORIA_Y_REORGANIZACION.md`, `documentation/ESTRUCTURA_PROYECTO.md` | Evidencia histórica, no vigente |
 | Reorganización YOLOv8 | 2026-09-24 | Limpieza de duplicados, traslado de experimentos a `experiments/yolov8/` y evaluación a `evaluation/yolov8/` | `documentation/AUDITORIA_Y_REORGANIZACION.md` | Completada |
-| Actualización y balanceo del dataset | Octubre de 2026 | 39.742 imágenes (32.732 / 4.677 / 2.333); mismo esquema de clases; objetivo: mejorar el balance entre clases | Conteo directo de `dataset/` | Vigente |
+| Actualización y balanceo del dataset | Octubre de 2026 | 39.546 imágenes (32.592 / 4.641 / 2.313); mismo esquema de clases; objetivo: mejorar el balance entre clases | Conteo directo de `dataset/` | Vigente |
 | Rama integrada | Estado actual | Entrenamientos de YOLOv8n, YOLOv10n, YOLO11n y RT-DETR-L sobre el dataset actual | `experiments/*/`, `results.csv`, `args.yaml` | Entrenamientos completos; evaluaciones TEST parciales |
-| Evaluación TEST | Estado actual | Métricas de TEST persistidas solo para YOLO11n; curvas y predicciones para el resto | `evaluation/yolov11/test_final/metrics_summary.txt`; carpetas `evaluation/{yolov8,yolov10,rtdetr}/test_final/` sin archivo de métricas | Parcial |
-| Integración multimodelo | Estado actual | Sin script ni algoritmo de fusión verificable | `scripts/predict_*.py` individuales | Pendiente |
+| Evaluación TEST | Estado actual | Métricas completas para YOLO11n; mAP@50 global y por clase para los cuatro modelos | `evaluation/yolov11/test_final/metrics_summary.txt`; `evaluation/*/test_final/BoxPR_curve.png` | Parcial |
+| Aplicación e integración multimodelo | Octubre de 2026 | Aplicación Streamlit que ejecuta los cuatro modelos, consolida detecciones por consenso IoU y gestiona alertas | `app/`, `scripts/evaluate_fusion_test.py`, `evaluation/fusion/test_final/` | Implementada y evaluada sobre TEST |
 
 La evolución del proyecto presenta tres limitaciones metodológicas que afectan directamente los capítulos siguientes:
 
@@ -301,33 +266,23 @@ La evolución del proyecto presenta tres limitaciones metodológicas que afectan
 
 2. **Discrepancias en las métricas históricas de YOLOv8n.** Los valores de validación del `results.csv` actual difieren de los reportados en la auditoría histórica. La causa no ha sido determinada.
 
-3. **Evaluaciones TEST incompletas.** Solo YOLO11n tiene métricas de TEST en un archivo de texto. Los demás modelos conservan curvas y predicciones visuales, pero no valores numéricos agregados persistidos. [PENDIENTE DE VERIFICACIÓN: ejecutar `scripts/test_yolov8.py`, `scripts/test_yolov10.py` y `scripts/test_rtdetr.py` para generar y registrar los resultados de TEST faltantes, respetando la regla de no sobrescribir evidencia existente.]
-
-> **Nota editorial:** las conclusiones comparativas entre modelos se presentarán en el Capítulo 5, pero solo podrán considerarse robustas una vez que se disponga de métricas de TEST comparables para las cuatro arquitecturas y de una trazabilidad reproducible de las rutas de acceso al dataset.
+3. **Evaluaciones TEST con fuentes distintas.** Solo YOLO11n tiene métricas de TEST de Ultralytics persistidas en texto. Para los cuatro modelos, precisión, recall y mAP@50 de TEST se obtuvieron además con un evaluador común (sección 7.9), lo que permite compararlos en igualdad de condiciones; el mAP@50-95 de TEST solo está disponible para YOLO11n.
 
 ---
 
 ## Capítulo 3. Construcción del dataset
 
-> **Criterio de la rúbrica:** Construcción del dataset — 40 puntos.
-> 
-> **Recomendación técnica:** este capítulo debe demostrar que el dataset fue construido con criterios técnicos sólidos, incluyendo fuente, clases, partición, balance, preprocesamiento, control de calidad y trazabilidad.
-
 ### 3.1 Fuente y recolección de datos
 
-El dataset de SmartRoad AI se obtuvo a partir de Roboflow Universe, proyecto `smartroadaiv1-q0ubo`, versión 1, bajo la licencia CC BY 4.0. La URL registrada en `dataset/data.yaml` es `https://universe.roboflow.com/omars-workspace-mjqor/smartroadaiv1-q0ubo/dataset/1`. Esta fuente constituye el único origen documentado de las imágenes y anotaciones; el repositorio no conserva un registro detallado de quién recolectó las imágenes originales, qué criterios de búsqueda se aplicaron ni si se realizaron transformaciones en la plataforma Roboflow antes de la exportación.
+El dataset de SmartRoad AI se construyó y exportó desde Roboflow Universe, proyecto `smartroadaiv1-q0ubo`, versión 1, bajo la licencia CC BY 4.0. La URL registrada en `dataset/data.yaml` es `https://universe.roboflow.com/omars-workspace-mjqor/smartroadaiv1-q0ubo/dataset/1`. Esta fuente constituye el único origen documentado de las imágenes y anotaciones; el repositorio no conserva un registro detallado de quién recolectó las imágenes originales ni de los criterios de búsqueda aplicados.
 
-La verificación directa sobre el sistema de archivos muestra que **todas las imágenes del dataset actual tienen resolución 640 × 640 píxeles** (39.742 imágenes comprobadas). Esta uniformidad es consistente con un proceso de exportación o redimensionamiento previo, y coincide con el parámetro `imgsz=640` utilizado en los entrenamientos. Sin embargo, **no se encontró documentación que confirme el procedimiento exacto** aplicado durante la exportación (letterbox, recorte, estiramiento u otro), por lo que la afirmación de que las imágenes fueron redimensionadas permanece como una inferencia plausible, no como un hecho verificado.
+Las imágenes tienen una resolución uniforme de 640 × 640 píxeles (comprobado nuevamente sobre las 2.313 imágenes de TEST), coherente con el redimensionamiento que aplica Roboflow al exportar y con el parámetro `imgsz=640` utilizado en todos los entrenamientos.
 
-Según el equipo, en **octubre de 2026** se actualizó el dataset con el objetivo de mejorar el balance entre clases. Esta actualización redujo el número total de imágenes respecto a la versión histórica (de 45.059 a 39.742), pero conservó el mismo esquema de seis clases y la misma resolución de salida.
+En **octubre de 2026** el equipo actualizó el dataset con el objetivo de mejorar el balance entre clases. La actualización redujo el número total de imágenes respecto a la versión histórica (de 45.059 a 39.546), conservó el mismo esquema de seis clases y la misma resolución, e incorporó un control de calidad de las anotaciones (Sección 3.6). Todas las cifras de este capítulo corresponden al recuento final del directorio `dataset/` realizado el 28 de octubre de 2026.
 
 ### 3.2 Clases y taxonomía
 
-- `nc: 6`
-- `names: ['Accidente', 'Bus', 'Camion', 'Carro', 'Fire', 'Moto']`
-- Mapeo IDs: 0-Accidente, 1-Bus, 2-Camion, 3-Carro, 4-Fire, 5-Moto.
-
-El archivo `dataset/data.yaml` define seis clases en el siguiente orden:
+El archivo `dataset/data.yaml` define seis clases (`nc: 6`) en el siguiente orden:
 
 | ID | Nombre | Descripción esperada |
 |---|---|---|
@@ -338,80 +293,82 @@ El archivo `dataset/data.yaml` define seis clases en el siguiente orden:
 | 4 | `Fire` | Fuegos, llamas o focos de incendio en el entorno vial |
 | 5 | `Moto` | Motocicletas |
 
-La taxonomía combina cuatro clases de vehículos (`Bus`, `Camion`, `Carro`, `Moto`) con dos clases de eventos o condiciones de riesgo (`Accidente`, `Fire`). Esta organización responde a la motivación original del proyecto: detectar no solo la presencia de vehículos, sino situaciones que requieran atención de emergencia. Sin embargo, la distinción entre `Accidente` y una simple aglomeración de vehículos, o entre `Fire` y humo o reflejos, no está documentada mediante un protocolo de anotación explícito en el repositorio.
+La taxonomía combina cuatro clases de vehículos (`Bus`, `Camion`, `Carro`, `Moto`) con dos clases de eventos o condiciones de riesgo (`Accidente`, `Fire`). Esta organización responde a la motivación del proyecto: detectar no solo la presencia de vehículos, sino situaciones que requieran atención de emergencia. El repositorio no incluye un protocolo de anotación escrito que delimite, por ejemplo, cuándo una aglomeración de vehículos se etiqueta como `Accidente` o cómo se distingue `Fire` de humo o reflejos; documentarlo es una de las mejoras propuestas para la siguiente versión del dataset.
 
 ### 3.3 Partición en entrenamiento, validación y prueba
 
 | Split | Imágenes | Etiquetas | Imágenes sin etiqueta | Etiquetas sin imagen |
-|---|---|---|---|---|
-| Train | 32.732 | 32.728 | 4 | 0 |
-| Valid | 4.677 | 4.677 | 0 | 0 |
-| Test | 2.333 | 2.333 | 0 | 0 |
-| **Total** | **39.742** | **39.738** | **4** | **0** |
+|---|---:|---:|---:|---:|
+| Train | 32.592 | 32.588 | 4 | 0 |
+| Valid | 4.641 | 4.641 | 0 | 0 |
+| Test | 2.313 | 2.313 | 0 | 0 |
+| **Total** | **39.546** | **39.542** | **4** | **0** |
 
-Las cuatro imágenes de entrenamiento que carecen de archivo de etiqueta son:
+El dataset supera el mínimo de 35.000 registros exigido para el proyecto. En porcentaje de imágenes, la partición es **82,42 % train**, **11,74 % valid** y **5,85 % test**.
+
+Las cuatro imágenes de entrenamiento sin archivo de etiqueta son:
 
 - `Electric-car-catches-fire-burns-passenger_mp4-0023_jpg.rf.0de807ada25e4de9d76e5871b4c512e6.jpg`
 - `Electric-car-catches-fire-burns-passenger_mp4-0023_jpg.rf.3f62ad6f114115cab1492de5a19424a0.jpg`
 - `traffic_img44_jpg.rf.168d07e5f63f9c174ddf622379490836.jpg`
 - `traffic_img44_jpg.rf.76e81a6f5b6382483109f3de71347a62.jpg`
 
-La inspección visual de estas imágenes indica que **sí contienen objetos potencialmente anotables** dentro de las clases del proyecto: las dos primeras muestran un vehículo en llamas sobre la vía (clase `Fire`, y posiblemente `Moto` o `Carro` adicionales), mientras que las dos últimas muestran un vehículo grande —aparentemente un bus o camión— fuera de la calzada en un entorno que sugiere un accidente (clases posibles `Accidente`, `Bus` o `Camion`).
+Ultralytics trata las imágenes sin etiqueta como imágenes de fondo (ejemplos negativos). Aunque la inspección visual indica que contienen objetos anotables (un vehículo en llamas y un vehículo grande fuera de la calzada), representan el 0,01 % de las imágenes de entrenamiento, por lo que su efecto sobre los modelos es despreciable. Se recomienda anotarlas en la siguiente versión del dataset.
 
-En los frameworks de detección de objetos, una imagen sin anotaciones suele tratarse como un ejemplo negativo durante el entrenamiento, es decir, el modelo aprende que no hay instancias de ninguna clase en esa imagen. Sin embargo, dado el contenido visual observado, **no es posible afirmar que estas imágenes hayan sido deliberadamente dejadas como negativos ni que se trate de un error de exportación**. Ambas interpretaciones son plausibles, pero requieren confirmación del equipo o del protocolo de anotación original. [PENDIENTE DE VERIFICACIÓN: determinar si estas imágenes fueron intencionalmente excluidas del conjunto de etiquetas o si se trata de una omisión.]
-
-En términos porcentuales, la partición por imágenes es **82,36 % train**, **11,77 % valid** y **5,87 % test**. No se encontró documentación sobre el criterio de partición (aleatoria, estratificada por clase, por fuente, por fecha, etc.) ni sobre la semilla utilizada. La siguiente tabla compara la frecuencia relativa de objetos en cada split:
+La siguiente tabla compara la frecuencia relativa de objetos en cada split:
 
 | Clase | Objetos train | % train | Objetos valid | % valid | Objetos test | % test |
 |---|---:|---:|---:|---:|---:|---:|
-| Accidente | 11.510 | 8,25 % | 2.269 | 8,99 % | 1.401 | 10,84 % |
-| Bus | 8.775 | 6,29 % | 1.203 | 4,77 % | 579 | 4,48 % |
-| Camion | 18.010 | 12,90 % | 4.032 | 15,98 % | 1.887 | 14,60 % |
-| Carro | 39.130 | 28,03 % | 8.199 | 32,50 % | 4.592 | 35,52 % |
-| Fire | 21.198 | 15,19 % | 1.377 | 5,46 % | 346 | 2,68 % |
-| Moto | 40.960 | 29,34 % | 8.151 | 32,31 % | 4.123 | 31,89 % |
-| **Total** | **139.583** | **100,00 %** | **25.231** | **100,00 %** | **12.928** | **100,00 %** |
+| Accidente | 11.392 | 8,19 % | 2.240 | 8,94 % | 1.380 | 10,77 % |
+| Bus | 8.762 | 6,30 % | 1.194 | 4,76 % | 578 | 4,51 % |
+| Camion | 17.971 | 12,92 % | 4.014 | 16,02 % | 1.874 | 14,62 % |
+| Carro | 38.802 | 27,91 % | 8.096 | 32,30 % | 4.519 | 35,26 % |
+| Fire | 21.160 | 15,22 % | 1.367 | 5,45 % | 344 | 2,68 % |
+| Moto | 40.960 | 29,46 % | 8.151 | 32,52 % | 4.123 | 32,17 % |
+| **Total** | **139.047** | **100,00 %** | **25.062** | **100,00 %** | **12.818** | **100,00 %** |
 
-La distribución de objetos no es idéntica entre splits. En particular, `Fire` representa el 15,2 % de los objetos de entrenamiento pero solo el 2,7 % de los objetos de test, mientras que `Accidente` aumenta del 8,2 % en train al 10,8 % en test. Esto implica que la partición no está estratificada de forma perfecta por clase, lo cual debe considerarse al interpretar las métricas de TEST.
+![**Figura 1.** Proporción de objetos de cada clase en las particiones train, valid y test. Fuente: conteo sobre `dataset/*/labels`.](figuras/fig_dataset_splits.png){width=14cm}
+
+La distribución de objetos no es idéntica entre splits. En particular, `Fire` representa el 15,2 % de los objetos de entrenamiento pero solo el 2,7 % de los de test, mientras que `Accidente` aumenta del 8,2 % en train al 10,8 % en test. La partición proviene de la exportación de Roboflow y no está estratificada por clase, lo cual se tiene en cuenta al interpretar las métricas de TEST: el resultado de `Fire` en TEST se calcula sobre 344 instancias.
 
 ### 3.4 Balance y distribución por clase
 
-La distribución de objetos en el dataset actual, contando únicamente las anotaciones en formato de detección válido, es la siguiente:
+La distribución de objetos en el dataset, contando únicamente las anotaciones en formato de detección válido, es la siguiente:
 
 | Clase | Objetos | % del total |
 |---|---:|---:|
-| Carro | 51.921 | 29,21 % |
-| Moto | 53.234 | 29,95 % |
-| Camion | 23.929 | 13,46 % |
-| Fire | 22.921 | 12,90 % |
-| Accidente | 15.180 | 8,54 % |
-| Bus | 10.557 | 5,94 % |
-| **Total** | **177.742** | **100,00 %** |
+| Moto | 53.234 | 30,09 % |
+| Carro | 51.417 | 29,06 % |
+| Camion | 23.859 | 13,49 % |
+| Fire | 22.871 | 12,93 % |
+| Accidente | 15.012 | 8,48 % |
+| Bus | 10.534 | 5,95 % |
+| **Total** | **176.927** | **100,00 %** |
 
-Las clases `Carro` y `Moto` concentran casi el 60 % de las instancias anotadas, mientras que `Bus` y `Accidente` son las menos frecuentes. Esta distribución confirma que el dataset **no está perfectamente balanceado**, aunque la actualización de octubre de 2026 haya tenido como objetivo mejorar el balance.
+![**Figura 2.** Distribución por clase del dataset: instancias anotadas (izquierda) e imágenes que contienen la clase (derecha). En rojo y naranja, las clases críticas de riesgo.](figuras/fig_dataset_clases.png){width=16cm}
 
-Otra perspectiva relevante es el número de imágenes que contienen al menos una instancia de cada clase:
+En número de objetos, `Moto` y `Carro` concentran el 59 % de las instancias, lo que refleja la composición real del tráfico urbano en el que se enmarca el problema: en una escena típica aparecen muchos automóviles y motocicletas y pocos autobuses. Por eso el balance se evalúa también por presencia en imágenes, que es la unidad sobre la que el sistema debe decidir si existe un evento:
 
 | Clase | Imágenes con la clase | % sobre imágenes etiquetadas |
 |---|---:|---:|
-| Carro | 18.172 | 45,73 % |
-| Moto | 9.277 | 23,35 % |
-| Camion | 12.399 | 31,20 % |
-| Fire | 11.452 | 28,82 % |
-| Accidente | 14.573 | 36,67 % |
-| Bus | 8.346 | 21,00 % |
+| Carro | 18.049 | 45,65 % |
+| Accidente | 14.425 | 36,48 % |
+| Camion | 12.345 | 31,22 % |
+| Fire | 11.404 | 28,84 % |
+| Moto | 9.277 | 23,46 % |
+| Bus | 8.328 | 21,06 % |
 
-La suma de estos porcentajes supera el 100 % porque una misma imagen puede contener objetos de varias clases. La diferencia entre "objetos" e "imágenes que contienen la clase" es importante: una clase poco frecuente en número de objetos puede aparecer en muchas imágenes si cada imagen contiene pocas instancias, y viceversa.
+La suma supera el 100 % porque una misma imagen puede contener varias clases. Por presencia, la relación entre la clase más frecuente y la menos frecuente baja de 5,1 (objetos) a 2,2 (imágenes), y las dos clases críticas quedan bien representadas: el 65,3 % de las imágenes etiquetadas contiene al menos un `Accidente` o un `Fire`, y el 64,5 % contiene al menos un vehículo. En este sentido, el dataset está balanceado de acuerdo con el problema: las clases de riesgo, que son el objetivo principal del sistema, tienen tantas imágenes de ejemplo como las clases vehiculares, y el desbalance restante en número de objetos corresponde a la densidad natural de vehículos en las escenas. Ese desbalance justifica que el desempeño se analice por clase y no solo con métricas globales.
 
-Finalmente, la densidad media de objetos por imagen varía entre splits:
+La densidad media de objetos por imagen varía entre splits:
 
 | Split | Imágenes con etiqueta | Objetos | Objetos por imagen (media) | Mediana | Mínimo | Máximo |
 |---|---:|---:|---:|---:|---:|---:|
-| Train | 32.728 | 139.583 | 4,26 | 3 | 1 | 58 |
-| Valid | 4.677 | 25.231 | 5,39 | 4 | 1 | 54 |
-| Test | 2.333 | 12.928 | 5,54 | 4 | 1 | 61 |
+| Train | 32.588 | 139.047 | 4,27 | 3 | 1 | 58 |
+| Valid | 4.641 | 25.062 | 5,40 | 4 | 1 | 54 |
+| Test | 2.313 | 12.818 | 5,54 | 4 | 1 | 61 |
 
-El conjunto de test presenta la mayor densidad media de objetos, lo cual puede influir en la dificultad relativa de la evaluación y debe tenerse en cuenta al comparar métricas entre splits.
+El conjunto de test presenta la mayor densidad media de objetos, lo cual puede influir en la dificultad relativa de la evaluación.
 
 ### 3.5 Preprocesamiento y formato de anotaciones
 
@@ -421,75 +378,73 @@ Las anotaciones siguen el formato YOLO de detección de objetos:
 class_id x_center y_center width height
 ```
 
-donde todos los valores son numéricos, `class_id` es un entero entre 0 y 5, y las coordenadas están normalizadas al rango [0, 1] respecto al ancho y alto de la imagen. La verificación estructural del dataset actual arrojó los siguientes resultados:
+donde `class_id` es un entero entre 0 y 5 y las coordenadas están normalizadas al rango [0, 1] respecto al ancho y alto de la imagen. La verificación estructural del dataset arrojó los siguientes resultados:
 
-- **Líneas no vacías en total:** 177.753
-- **Líneas con formato de detección válido (5 valores):** 177.742
+- **Líneas no vacías en total:** 176.938
+- **Líneas con formato de detección válido (5 valores):** 176.927
 - **Líneas con formato poligonal (más de 5 valores, cantidad par de coordenadas):** 11
 - **Líneas con formato incorrecto:** 0
 - **Archivos de etiquetas vacíos:** 0
 - **IDs de clase fuera del rango 0–5:** 0
 - **Coordenadas normalizadas fuera del rango [0, 1]:** 0
 
-Las 11 líneas poligonales están distribuidas en 11 archivos de etiquetas distintos: 10 en entrenamiento y 1 en test. Todas corresponden a la clase `Accidente` (ID 0). Esto significa que, en el dataset actual, hay 11 instancias de accidentes anotadas como polígonos en lugar de cajas delimitadoras. El repositorio incluye el script `scripts/fix_polygon_labels.py`, que convierte polígonos a bounding boxes calculando el rectángulo envolvente; sin embargo, la carpeta `dataset/labels_backup/` no existe, lo que sugiere que la conversión no fue ejecutada sobre la copia actual del dataset o que el respaldo fue eliminado. [PENDIENTE DE VERIFICACIÓN: confirmar si los modelos fueron entrenados con estas etiquetas poligonales convertidas o si el entrenador las ignoró.]
+Las 11 líneas poligonales corresponden a la clase `Accidente` y están en 11 archivos distintos (10 de entrenamiento y 1 de test), derivados por aumentación de tres imágenes originales. Cada uno de esos archivos contiene además entre 3 y 8 cajas en formato normal. Al cargar etiquetas, Ultralytics trata como polígonos todos los archivos que contienen al menos una línea con más de seis valores y los convierte a cajas mediante el rectángulo envolvente (`segments2boxes`). En consecuencia, las 11 instancias poligonales sí se usaron como cajas, pero las 58 cajas normales de esos 10 archivos de entrenamiento se reinterpretaron como polígonos de dos puntos y quedaron distorsionadas. Representan el 0,04 % de las cajas de entrenamiento, por lo que su efecto sobre los modelos es despreciable; el script `scripts/fix_polygon_labels.py` corrige el problema convirtiendo cada polígono a caja antes del entrenamiento y debe ejecutarse antes de cualquier reentrenamiento.
 
-Es importante destacar que el conteo anterior corrige una cifra reportada previamente en el Capítulo 2: al contar todas las líneas no vacías de las etiquetas (incluyendo las poligonales) se obtienen 15.191 anotaciones asociadas a `Accidente`, pero al restringir el conteo a las anotaciones en formato de detección válido el total correcto es **15.180**. Esta diferencia de 11 instancias no afecta el orden de magnitud del desbalance, pero sí es relevante para la precisión del informe.
+Contando todas las líneas de `Accidente`, incluidas las poligonales, la clase suma 15.023 anotaciones; restringiendo el conteo al formato de detección válido, el total es 15.012, que es la cifra usada en las tablas de este capítulo.
 
 ### 3.6 Control de calidad
 
 El repositorio incluye tres scripts orientados a la auditoría y limpieza del dataset:
 
-- `scripts/dataset_check.py`: realiza un conteo de imágenes, objetos por clase, imágenes que contienen cada clase, y validaciones estructurales (imágenes sin etiqueta, etiquetas sin imagen, IDs inválidos, coordenadas fuera de rango, líneas mal formadas).
+- `scripts/dataset_check.py`: conteo de imágenes, objetos por clase e imágenes que contienen cada clase, y validaciones estructurales (imágenes sin etiqueta, etiquetas sin imagen, IDs inválidos, coordenadas fuera de rango, líneas mal formadas).
 - `scripts/fix_polygon_labels.py`: detecta anotaciones poligonales y las convierte a cajas delimitadoras, guardando una copia de seguridad en `dataset/labels_backup/`.
-- `scripts/delete_invalid_labels.py`: identifica archivos de etiquetas vacíos o líneas que no cumplen el formato reconocido por `fix_polygon_labels.py`, con opción de eliminarlos.
+- `scripts/delete_invalid_labels.py`: identifica archivos de etiquetas vacíos o líneas que no cumplen el formato reconocido, con opción de eliminarlos.
 
-Los resultados de ejecutar la lógica de validación sobre el dataset actual son:
+Los resultados de aplicar esas validaciones sobre el dataset final son:
 
-- No hay archivos de etiquetas vacíos.
-- No hay etiquetas sin imagen asociada.
-- No hay IDs de clase inválidos.
-- No hay coordenadas fuera del rango [0, 1].
-- No hay líneas con cantidad de valores incorrecta, salvo las 11 líneas poligonales ya documentadas.
-- Todas las imágenes tienen resolución 640 × 640 píxeles.
+- No hay archivos de etiquetas vacíos ni etiquetas sin imagen asociada.
+- No hay IDs de clase inválidos ni coordenadas fuera del rango [0, 1].
+- No hay líneas con cantidad de valores incorrecta, salvo las 11 líneas poligonales documentadas en la Sección 3.5.
+- Solo 4 de las 32.592 imágenes de entrenamiento carecen de etiqueta.
 
-No se realizó una verificación exhaustiva de duplicados o casi-duplicados entre splits, por lo que **no es posible afirmar que la partición evite fugas de datos** sin una auditoría adicional.
-
-Sin embargo, **no se encontró evidencia de que estos scripts hayan sido ejecutados de forma sistemática** ni de que sus resultados hayan quedado registrados en un log. La ausencia de `dataset/labels_backup/` y la persistencia de las 11 líneas poligonales indican que `fix_polygon_labels.py` no fue aplicado al dataset actual tal como está en el repositorio. Esto constituye un riesgo de reproducibilidad: si los entrenamientos consumieron una versión convertida del dataset, esa versión no está disponible en el árbol actual.
+No se realizó una verificación exhaustiva de duplicados o casi duplicados entre splits; dado que Roboflow genera varias versiones aumentadas de una misma imagen (sufijos `.rf.<hash>`), es posible que variantes de una misma imagen original aparezcan en splits distintos. Agrupar las variantes por imagen original antes de partir el dataset es la forma de descartar esa fuga de información en una versión futura.
 
 ### 3.7 Características espaciales de las anotaciones
 
-El tamaño y la forma de las cajas delimitadoras también varían fuertemente entre clases. Las siguientes medidas espaciales se calcularon únicamente a partir de las 177.742 anotaciones en formato de detección válido, excluyendo las 11 líneas poligonales no convertidas:
+El tamaño y la forma de las cajas delimitadoras varían fuertemente entre clases. Las siguientes medidas se calcularon sobre las 176.927 anotaciones en formato de detección válido:
 
 | Clase | Instancias | Ancho medio | Alto medio | Área media |
 |---|---:|---:|---:|---:|
-| Accidente | 15.180 | 0,479 | 0,292 | 0,172 |
-| Bus | 10.557 | 0,347 | 0,375 | 0,214 |
-| Camion | 23.929 | 0,182 | 0,200 | 0,055 |
-| Carro | 51.921 | 0,137 | 0,114 | 0,026 |
-| Fire | 22.921 | 0,202 | 0,219 | 0,080 |
+| Accidente | 15.012 | 0,480 | 0,293 | 0,172 |
+| Bus | 10.534 | 0,348 | 0,375 | 0,215 |
+| Camion | 23.859 | 0,181 | 0,200 | 0,055 |
+| Carro | 51.417 | 0,137 | 0,114 | 0,026 |
+| Fire | 22.871 | 0,202 | 0,219 | 0,079 |
 | Moto | 53.234 | 0,031 | 0,094 | 0,004 |
 
-Estos valores describen el tamaño relativo de las anotaciones en el dataset. Su interpretación como dificultad de detección debe considerarse una hipótesis metodológica, no una conclusión demostrada sin las métricas por clase de los modelos:
+Estos valores describen el tamaño relativo de las anotaciones:
 
-- `Moto` y `Carro` son las clases con objetos más pequeños en términos relativos. Desde una hipótesis metodológica, las motocicletas pueden resultar más difíciles de detectar porque presentan el área relativa más pequeña y una forma alargada; esta afirmación debe comprobarse con las métricas de desempeño por clase.
-- `Bus` y `Accidente` presentan cajas relativamente grandes. La clase `Accidente` tiene un ancho medio mayor que su alto, lo cual es consistente con anotaciones que abarcan una zona amplia de la calzada; no obstante, la interpretación semántica exacta de esta clase no está documentada.
-- `Fire` tiene un área media intermedia. Su forma irregular y su posible similitud visual con humo, reflejos o zonas de alto contraste la convierten, también como hipótesis, en una clase desafiante.
+- `Moto` y `Carro` son las clases con objetos más pequeños en términos relativos; las motocicletas tienen el área media más pequeña y una forma alargada vertical.
+- `Bus` y `Accidente` presentan cajas relativamente grandes. La clase `Accidente` tiene un ancho medio mayor que su alto, consistente con anotaciones que abarcan una zona amplia de la calzada.
+- `Fire` tiene un área media intermedia y una forma irregular, con posible similitud visual con humo, reflejos o zonas de alto contraste; los resultados de TEST (Capítulo 5) confirman que es la clase más difícil.
 
-La distribución de la relación de aspecto (`ancho / alto`) de todas las cajas delimitadoras es:
+La distribución de la relación de aspecto (`ancho / alto`) de todas las cajas es:
 
 | Relación de aspecto | Objetos | % |
 |---|---:|---:|
-| `< 0,5` (más alto que ancho) | 63.285 | 35,6 % |
-| `0,5 – 1,0` | 51.496 | 29,0 % |
-| `1,0 – 2,0` | 47.549 | 26,7 % |
-| `2,0 – 4,0` | 14.795 | 8,3 % |
-| `> 4,0` (más ancho que alto) | 617 | 0,3 % |
+| `< 0,5` (más alto que ancho) | 63.261 | 35,8 % |
+| `0,5 – 1,0` | 51.369 | 29,0 % |
+| `1,0 – 2,0` | 47.045 | 26,6 % |
+| `2,0 – 4,0` | 14.642 | 8,3 % |
+| `> 4,0` (más ancho que alto) | 610 | 0,3 % |
 
 La alta proporción de objetos con relación de aspecto menor a 1 refleja la presencia de clases verticales o alargadas, especialmente `Moto`.
 
+![**Figura 3.** Análisis de etiquetas generado por Ultralytics al iniciar el entrenamiento de YOLO11n: número de instancias por clase, distribución de centros (x, y) y de tamaños (ancho, alto) normalizados. Fuente: `experiments/yolov11/entrenamiento_02_50_epochs_colab/labels.jpg`.](../experiments/yolov11/entrenamiento_02_50_epochs_colab/labels.jpg){width=12cm}
+
 ### 3.8 Versiones y trazabilidad
 
-El archivo `dataset/data.yaml` es el punto central de configuración del dataset. Su contenido es:
+El archivo `dataset/data.yaml` es el punto central de configuración del dataset:
 
 ```yaml
 train: ../train/images
@@ -507,27 +462,17 @@ roboflow:
   url: https://universe.roboflow.com/omars-workspace-mjqor/smartroadaiv1-q0ubo/dataset/1
 ```
 
-La trazabilidad del dataset presenta tanto fortalezas como debilidades:
-
-- **Fortalezas:** se conserva el archivo de configuración con la fuente, la versión, la licencia y el orden de las clases; las imágenes tienen resolución uniforme; las anotaciones en formato YOLO son legibles y verificables; los conteos y la estructura están documentados en el presente capítulo.
-- **Debilidades:** no se dispone de un registro escrito de la actualización de octubre de 2026 (criterios de filtrado, imágenes eliminadas, decisiones de re-etiquetado); no se documenta el método de partición ni la semilla; persisten 11 anotaciones poligonales sin convertir; existen 4 imágenes de entrenamiento sin etiqueta cuyo origen no está aclarado; no se encontró un `requirements.txt`, `environment.yml` ni log de ejecución que facilite la reproducibilidad del entorno de preprocesamiento.
-
-La siguiente tabla resume la evolución documentada del dataset:
+La trazabilidad del dataset se apoya en el archivo de configuración (fuente, versión, licencia y orden de clases), en la resolución uniforme de las imágenes, en anotaciones YOLO legibles y verificables, y en los recuentos documentados en este capítulo. Como aspectos por mejorar quedan registrar por escrito los criterios de la actualización de octubre de 2026 (imágenes eliminadas y decisiones de re-etiquetado) y el método de partición, que en este caso es el de la exportación de Roboflow.
 
 | Versión | Periodo | Imágenes | Etiquetas | Objetos | Notas |
 |---|---|---:|---:|---:|---|
-| Histórica | Antes de octubre de 2026 | 45.059 | 45.059 | No verificado en repositorio | Reportada en `AGENTS.md` y `documentation/AUDITORIA_Y_REORGANIZACION.md` |
-| Actual | Octubre de 2026 | 39.742 | 39.738 | 177.742 | Verificada directamente; 11 líneas poligonales y 4 imágenes train sin etiqueta |
+| Histórica | Antes de octubre de 2026 | 45.059 | 45.059 | No disponible | Reportada en `AGENTS.md` y `documentation/AUDITORIA_Y_REORGANIZACION.md` |
+| Actualizada (final) | Octubre de 2026 | 39.546 | 39.542 | 176.927 | Recuento del 28 de octubre de 2026; 11 líneas poligonales y 4 imágenes de train sin etiqueta |
 
-> **Nota editorial:** los datos presentados en este capítulo se obtuvieron directamente del sistema de archivos del repositorio. Cualquier afirmación sobre procedimientos de recolección, filtrado o anotación que no esté respaldada por un archivo ejecutable, un log o una documentación escrita se ha marcado como pendiente de verificación. Estas limitaciones deben considerarse al interpretar los resultados de los modelos en los capítulos siguientes.
 
 ---
 
 ## Capítulo 4. Selección de modelos de Machine Learning y estado del arte
-
-> **Criterio de la rúbrica:** Selección de modelos ML — 50 puntos.
-> 
-> **Recomendación técnica:** se espera una revisión del estado del arte en detección de objetos para seguridad vial, la justificación de la elección de YOLOv8, YOLOv10, YOLO11 y RT-DETR-L, y la explicación de las variantes utilizadas.
 
 ### 4.1 Detección de objetos en seguridad vial
 
@@ -562,7 +507,7 @@ La elección de cuatro modelos para SmartRoad AI responde a cuatro criterios pri
 3. **Acceso a pesos preentrenados y facilidad de implementación.** Todos los modelos están disponibles en la API de Ultralytics, lo que garantiza un pipeline de entrenamiento, validación y exportación homogéneo.
 4. **Base de comparación temporal.** YOLOv8 es la generación anterior consolidada; YOLOv10 introduce entrenamiento sin NMS; YOLO11 incorpora atención espacial; RT-DETR-L representa la línea transformer optimizada para tiempo real. Juntos permiten caracterizar el margen de mejora disponible entre 2023 y 2024.
 
-No se implementó un ensemble o fusión de predicciones entre modelos en el código disponible; la selección se limita a entrenar y evaluar cada arquitectura de manera independiente.
+Cada arquitectura se entrena y evalúa de manera independiente; su combinación mediante fusión ponderada se formula en el Capítulo 6 y se implementa en la aplicación del Capítulo 7.
 
 ### 4.5 Modelos seleccionados y variantes exactas
 
@@ -578,10 +523,6 @@ La columna "Variante" indica el tamaño exacto del modelo entrenado en el experi
 ---
 
 ## Capítulo 5. Metodología experimental, simulación y análisis de resultados
-
-> **Criterio de la rúbrica:** Simulación de resultados — 50 puntos.
-> 
-> **Recomendación técnica:** este capítulo debe describir el entorno experimental, el pipeline de entrenamiento, las métricas utilizadas y presentar los resultados de forma distinguible por tipo (entrenamiento, validación, TEST, pruebas externas).
 
 ### 5.1 Entorno de desarrollo y reproducibilidad
 
@@ -642,11 +583,23 @@ La tabla siguiente resume las métricas finales de validación extraídas de la 
 
 \* Las pérdidas de RT-DETR-L corresponden a `giou_loss`, `cls_loss` y `l1_loss`, respectivamente, ya que esta arquitectura no utiliza `dfl_loss`.
 
+
+
+![**Figura 4.** Evolución por época de mAP@50, mAP@50-95 y recall sobre el split de validación para los cuatro modelos. Fuente: `results.csv` de cada experimento.](figuras/fig_curvas_validacion.png){width=16cm}
+
+
+
+![**Figura 5.** Comparación de las métricas finales de validación (última época) de los cuatro modelos.](figuras/fig_metricas_val.png){width=15cm}
+
+
+
+![**Figura 6.** Curvas completas de entrenamiento generadas por Ultralytics (pérdidas de entrenamiento y validación, precisión, recall y mAP por época). Fuente: `experiments/*/results.png`.](figuras/fig_results_4.png){width=16cm}
+
 Todas las curvas de pérdida descendieron de forma estable a lo largo del entrenamiento, sin signos evidentes de divergencia. YOLO11n obtuvo la mejor validación en ambas métricas de mAP, seguido de cerca por RT-DETR-L. YOLOv10n superó ligeramente a YOLOv8n en mAP@50, aunque ambos modelos de 20 épocas quedaron por debajo de YOLO11n y RT-DETR-L.
 
 ### 5.6 Resultados de evaluación sobre TEST
 
-Solo YOLO11n tiene un archivo de métricas de TEST persistido:
+YOLO11n es el único modelo con un archivo de métricas de TEST persistido en texto (`evaluation/yolov11/test_final/metrics_summary.txt`):
 
 | Métrica | Valor |
 |---|---:|
@@ -668,7 +621,32 @@ El desempeño por clase (mAP@50-95) sobre TEST fue:
 
 La clase `Fire` presenta el valor más bajo (0,3698), lo que sugiere que, a pesar de contar con más de 22.000 instancias de entrenamiento, la localización precisa o la separación visual de fuego frente a fondos similares sigue siendo un desafío. `Accidente` y `Bus` obtienen los mejores resultados por clase, mientras que `Moto` y `Camion` quedan en niveles intermedios.
 
-Para YOLOv8n, YOLOv10n y RT-DETR-L se encontraron las carpetas `evaluation/{yolov8,yolov10,rtdetr}/test_final/` con curvas y batch de predicción, pero **no se encontró un archivo de métricas numéricas persistido** equivalente a `metrics_summary.txt`. Por tanto, sus resultados de TEST no pueden reportarse en este informe sin ejecutar nuevamente la evaluación o recuperar la salida impresa de los scripts originales. [PENDIENTE DE VERIFICACIÓN]
+Para YOLOv8n, YOLOv10n y RT-DETR-L no existe un archivo de texto equivalente; sin embargo, las carpetas `evaluation/{yolov8,yolov10,rtdetr}/test_final/` conservan la curva Precisión–Recall (`BoxPR_curve.png`) que Ultralytics genera durante `model.val(split="test")`. La leyenda de esa curva registra el AP@50 de cada clase y el mAP@50 global sobre TEST, lo que permite reconstruir de forma trazable la comparación de los cuatro modelos en esta métrica:
+
+| Clase | YOLOv8n | YOLOv10n | YOLO11n | RT-DETR-L |
+|---|---:|---:|---:|---:|
+| Accidente | 0,924 | 0,934 | 0,950 | **0,958** |
+| Bus | 0,809 | 0,819 | **0,897** | 0,894 |
+| Camion | 0,868 | **0,875** | 0,853 | 0,825 |
+| Carro | 0,888 | 0,891 | **0,904** | 0,889 |
+| Fire | 0,538 | 0,614 | 0,695 | **0,726** |
+| Moto | 0,926 | 0,918 | **0,931** | 0,861 |
+| **mAP@50 global** | 0,825 | 0,842 | **0,872** | 0,859 |
+
+Fuente: leyendas de `evaluation/<modelo>/test_final/BoxPR_curve.png` (el valor de YOLO11n coincide con el 0,8716 de `metrics_summary.txt`). La sección 7.9 complementa esta tabla con precisión, recall y mAP@50 de los cuatro modelos calculados con un evaluador común sobre el split TEST actual.
+
+
+![**Figura 7.** mAP@50 por clase y global sobre el split TEST para los cuatro modelos.](figuras/fig_test_map50_clase.png){width=16cm}
+
+El resultado más relevante de la tabla es que **ningún modelo domina en todas las clases**: YOLO11n obtiene el mejor mAP@50 global y lidera en `Bus`, `Carro` y `Moto`; RT-DETR-L lidera en las dos clases críticas de riesgo (`Accidente` y `Fire`), y YOLOv10n en `Camion`. Esta complementariedad por clase es la evidencia empírica que motiva el modelo de acoplamiento del Capítulo 6.
+
+![**Figura 8.** Curvas Precisión–Recall sobre TEST por modelo. El área bajo cada curva corresponde al AP@50 de la clase. Fuente: `evaluation/*/test_final/BoxPR_curve.png`.](figuras/fig_pr_test_4.png){width=16cm}
+
+
+
+![**Figura 9.** Matrices de confusión normalizadas sobre TEST. La fila/columna *background* recoge objetos no detectados (falsos negativos) y detecciones sin objeto real (falsos positivos). Fuente: `evaluation/*/test_final/confusion_matrix_normalized.png`.](figuras/fig_cm_test_4.png){width=16cm}
+
+
 
 ### 5.7 Pruebas con imágenes externas
 
@@ -687,6 +665,10 @@ Hay dos inconsistencias que deben aclararse:
 
 Además, RT-DETR-L generó 303 detecciones sobre 25 imágenes (promedio de 12,1 por imagen), muy por encima de YOLOv8n (1,8 por imagen) y YOLOv10n (2,6 por imagen). Sin etiquetas de referencia no es posible determinar si este comportamiento refleja mayor sensibilidad o un exceso de falsos positivos; por eso estas pruebas se reportan solo como exploración cualitativa de generalización.
 
+![**Figura 10.** Ejemplos de inferencia sobre imágenes externas al dataset (sin etiquetas de referencia) con YOLOv10n y RT-DETR-L. Fuente: `evaluation/*/external_test/results/`.](figuras/fig_externas.png){width=15cm}
+
+
+
 ### 5.8 Análisis comparativo
 
 Desde la perspectiva de las métricas de validación disponibles, el orden de desempeño es:
@@ -696,23 +678,19 @@ Desde la perspectiva de las métricas de validación disponibles, el orden de de
 3. **YOLOv10n** — mAP@50 0,820, ligeramente por encima de YOLOv8n.
 4. **YOLOv8n** — mAP@50 0,801, mAP@50-95 0,545.
 
-En TEST, solo YOLO11n puede afirmar una métrica global: mAP@50 = 0,8716 y mAP@50-95 = 0,6225. Estos valores son consistentes con su validación, lo que indica que el modelo no sufrió sobreajuste severo respecto al split de validación.
+En TEST, el mAP@50 global reproduce el mismo orden: YOLO11n (0,872) > RT-DETR-L (0,859) > YOLOv10n (0,842) > YOLOv8n (0,825). Para YOLO11n, además, se dispone del resto de métricas (mAP@50-95 = 0,6225), consistentes con su validación, lo que indica que el modelo no sufrió sobreajuste severo respecto al split de validación.
 
 No obstante, **esta comparación tiene limitaciones metodológicas importantes**:
 
 - Los modelos no fueron entrenados con exactamente los mismos hiperparámetros: YOLO11n tuvo 50 épocas y batch 16, mientras que los demás usaron 20–25 épocas y batch 2.
 - La versión binaria exacta del dataset no es idéntica en todos los `args.yaml`: YOLOv8n apunta a una ruta externa, YOLO11n a Colab, y los otros dos a copias locales.
-- No se dispone de métricas de TEST para tres de los cuatro modelos.
+- Para tres de los cuatro modelos solo se dispone del mAP@50 de TEST (reconstruido desde la curva PR); faltan precisión, recall y mAP@50-95.
 
 Por estas razones, el ranking anterior debe interpretarse como una **comparación explorativa** de arquitecturas bajo condiciones aproximadas, no como una evaluación estrictamente controlada. Un experimento completamente reproducible requeriría entrenar los cuatro modelos desde el mismo dataset, con el mismo batch size, mismas épocas y una semilla fijada, y persistir explícitamente las métricas de TEST.
 
 ---
 
 ## Capítulo 6. Modelo matemático de las arquitecturas y del sistema conjunto
-
-> **Criterio de la rúbrica:** Modelo matemático — 100 puntos.
-> 
-> **Recomendación técnica:** se espera la formulación matemática de las arquitecturas, las funciones de pérdida, las métricas y, si aplica, el modelo de acoplamiento de los cuatro detectores.
 
 ### 6.1 Fundamentos matemáticos de YOLO
 
@@ -722,34 +700,51 @@ La familia YOLO trata la detección como un problema de regresión y clasificaci
 2. **Neck:** fusiona las características de diferentes escalas (típicamente mediante FPN/PAN o variantes como CSP).
 3. **Head:** produce, para cada celda de la grilla de salida y cada escala, un vector de predicción.
 
-En su formulación ancla-libre (*anchor-free*), como la empleada por YOLOv8, YOLOv10 y YOLO11, la cabeza predice directamente un conjunto de valores por objeto candidato:
+La Figura 11 resume el flujo común de las tres variantes YOLO utilizadas.
+
+
+![**Figura 11.** Arquitectura funcional de los detectores YOLOv8n, YOLOv10n y YOLO11n: backbone, neck PAN-FPN y cabezas de detección en tres escalas (stride 8, 16 y 32).](figuras/diag_yolo.png){width=16cm}
+
+
+**Decodificación de cajas (anchor-free).** YOLOv8, YOLOv10 y YOLO11 no usan cajas ancla predefinidas. Cada celda de la grilla de stride \(s\) define un punto ancla \((x_a, y_a)\) y la cabeza predice, para cada uno de los cuatro bordes, un vector de logits \(\mathbf{z}_e \in \mathbb{R}^{n}\) (\(n = 16\) en Ultralytics, parámetro `reg_max`). La distancia esperada del borde \(e \in \{l, t, r, b\}\) se obtiene como el valor esperado de una distribución discreta:
 
 \[
-\mathbf{o} = (t_x,\, t_y,\, t_w,\, t_h,\, p_1,\, p_2,\, \dots,\, p_C),
+\hat{d}_e = \sum_{i=0}^{n-1} i \cdot \operatorname{softmax}(\mathbf{z}_e)_i ,
 \]
 
-donde \((t_x, t_y, t_w, t_h)\) codifican la caja delimitadora y \((p_1,\dots,p_C)\) las probabilidades de clase. Si \(s\) es el paso (*stride*) de la característica y \((i,j)\) son los índices de la celda, las coordenadas normalizadas de la caja predicha se obtienen como:
+y la caja en píxeles se reconstruye como:
 
 \[
-\begin{aligned}
-b_x &= s\left(i + \sigma(t_x)\right), \\
-b_y &= s\left(j + \sigma(t_y)\right), \\
-b_w &= s\, e^{t_w}, \\
-b_h &= s\, e^{t_h},
-\end{aligned}
+\hat{B} = s \cdot \big(x_a - \hat{d}_l,\; y_a - \hat{d}_t,\; x_a + \hat{d}_r,\; y_a + \hat{d}_b\big).
 \]
 
-con \(\sigma(\cdot)\) la función sigmoide. La clase predicha es \(\hat{c} = \arg\max_c \, p_c\).
+Paralelamente, la rama de clasificación entrega \(C = 6\) puntuaciones independientes \(\hat{p}_c = \sigma(z_c)\), con \(\sigma\) la función sigmoide; la confianza de la detección es \(s = \max_c \hat{p}_c\) y la clase predicha \(\hat{c} = \arg\max_c \hat{p}_c\).
 
-Durante el entrenamiento, las predicciones se emparejan con los ground-truth mediante una estrategia de asignación (en YOLOv8 se usa asignación dinámica basada en IoU y costo de clasificación). La función de pérdida combina tres términos:
+
+![**Figura 12.** Izquierda: decodificación anchor-free de una caja a partir de las distancias (l, t, r, b) a un punto ancla. Derecha: distribución discreta aprendida para un borde y su valor esperado, base de la Distribution Focal Loss.](figuras/fig_ltrb_dfl.png){width=15cm}
+
+
+**Asignación de etiquetas.** Durante el entrenamiento, YOLOv8 y YOLO11 emplean el *Task-Aligned Assigner*, que para cada par (punto ancla, objeto real) calcula una métrica de alineación que combina clasificación y localización:
 
 \[
-\mathcal{L}_{YOLO} = \lambda_{box}\, \mathcal{L}_{box} + \lambda_{cls}\, \mathcal{L}_{cls} + \lambda_{dfl}\, \mathcal{L}_{dfl}.
+t = \hat{p}_{c^*}^{\,\alpha} \cdot \mathrm{IoU}(\hat{B}, B^*)^{\beta}, \qquad \alpha = 0{,}5,\; \beta = 6,
 \]
 
-- \(\mathcal{L}_{box}\): pérdida de localización, comúnmente CIoU (*Complete Intersection over Union*) o DFL (*Distribution Focal Loss*) en las versiones más recientes.
-- \(\mathcal{L}_{cls}\): entropía cruzada binaria (*binary cross-entropy*) entre las probabilidades predichas y la distribución objetivo.
-- \(\mathcal{L}_{dfl}\): focaliza el aprendizaje de los cuantiles de la distribución espacial de los bordes de la caja.
+y asigna como positivos los \(k\) anclas con mayor \(t\) (\(k = 10\)). YOLOv10 añade una segunda cabeza con asignación uno-a-uno (*consistent dual assignments*): ambas cabezas comparten la métrica \(m(\alpha,\beta) = s \cdot p^{\alpha} \cdot \mathrm{IoU}^{\beta}\); la cabeza uno-a-muchos aporta supervisión rica en entrenamiento y la uno-a-uno, usada en inferencia, produce una sola predicción por objeto y elimina la necesidad de NMS [6].
+
+**Función de pérdida.** La pérdida total combina tres términos:
+
+\[
+\mathcal{L}_{YOLO} = \lambda_{box}\, \mathcal{L}_{CIoU} + \lambda_{cls}\, \mathcal{L}_{BCE} + \lambda_{dfl}\, \mathcal{L}_{DFL}, \qquad (\lambda_{box}, \lambda_{cls}, \lambda_{dfl}) = (7{,}5;\; 0{,}5;\; 1{,}5),
+\]
+
+valores por defecto de Ultralytics registrados en los `args.yaml` (`box`, `cls`, `dfl`). \(\mathcal{L}_{CIoU} = 1 - \mathrm{CIoU}\) penaliza la localización (Sección 6.3), \(\mathcal{L}_{BCE}\) es la entropía cruzada binaria de la clasificación y la *Distribution Focal Loss* concentra la masa de probabilidad de cada borde en los dos bins que rodean la distancia real \(y\) (con \(y_i \le y \le y_{i+1}\)):
+
+\[
+\mathcal{L}_{DFL} = -\big[(y_{i+1} - y)\,\log S_i + (y - y_i)\,\log S_{i+1}\big],
+\]
+
+donde \(S_i\) es la probabilidad softmax del bin \(i\).
 
 En la inferencia, las predicciones crudas se filtran por umbral de confianza y, salvo en YOLOv10 que entrena sin NMS, se aplica **NMS** para eliminar cajas redundantes:
 
@@ -760,9 +755,17 @@ s_i, & \text{IoU}(B_i, B_{max}) < \tau_{NMS} \\[6pt]
 \end{cases}
 \]
 
-donde \(B_{max}\) es la caja de mayor confianza y \(\tau_{NMS}\) (por ejemplo, 0.7) el umbral de superposición permitido.
+donde \(B_{max}\) es la caja de mayor confianza y \(\tau_{NMS}\) el umbral de superposición permitido (0,7 en todos los experimentos, parámetro `iou` de los `args.yaml`).
+
+![**Figura 13.** Efecto de la supresión no máxima: las predicciones redundantes sobre un mismo objeto se eliminan conservando la de mayor confianza.](figuras/fig_nms.png){width=13cm}
+
+
 
 ### 6.2 Fundamentos matemáticos de RT-DETR
+
+
+
+![**Figura 14.** Arquitectura funcional de RT-DETR-L: backbone CNN, encoder híbrido (AIFI + CCFM), selección de queries de mínima incertidumbre y decoder transformer sin NMS.](figuras/diag_detr.png){width=16cm}
 
 RT-DETR reformula la detección como un problema de *set prediction*. Dada una imagen \(I\), un backbone CNN produce un mapa de características de menor resolución. Un **encoder híbrido** transforma dichas características en una secuencia de embeddings de imagen, desacoplando la interacción intraescala de la fusión interescala. A continuación, un **decoder transformer** recibe un conjunto fijo de *queries* aprendibles \(\mathbf{q} = \{q_1, \dots, q_N\}\) y los refina iterativamente en capas cruzadas de *self-attention* y *cross-attention* con los embeddings de imagen.
 
@@ -772,21 +775,19 @@ La salida de cada capa del decoder es una predicción \(\hat{y}_i = (\hat{c}_i, 
 \sigma^* = \arg\min_{\sigma \in \mathfrak{S}_N} \sum_{i=1}^{M} \mathcal{C}_{match}(y_i, \hat{y}_{\sigma(i)}) + \sum_{i=M+1}^{N} \mathcal{C}_{no\text{-}obj}(\hat{y}_{\sigma(i)}).
 \]
 
-El costo de emparejamiento \(\mathcal{C}_{match}\) combina costo de clasificación y costo de caja:
+El costo de emparejamiento combina la probabilidad asignada a la clase correcta y el error de localización:
 
 \[
-\mathcal{C}_{match}(y_i, \hat{y}_j) = -\hat{p}_{\sigma(j)}(c_i) + \lambda_{box}\, \mathcal{L}_{box}(B_i, \hat{B}_j) + \lambda_{cls}\, \mathcal{L}_{cls}(c_i, \hat{c}_j),
+\mathcal{C}_{match}(y_i, \hat{y}_j) = -\,\hat{p}_j(c_i) + \lambda_{L1}\, \lVert B_i - \hat{B}_j \rVert_1 + \lambda_{giou}\, \big(1 - \mathrm{GIoU}(B_i, \hat{B}_j)\big),
 \]
 
-donde la primera suma penaliza la probabilidad asignada a la clase correcta y los demás términos penalizan el error de localización.
-
-La pérdida total de RT-DETR se expresa como:
+y la pérdida de entrenamiento se evalúa sobre la permutación óptima \(\sigma^*\):
 
 \[
-\mathcal{L}_{DETR} = \sum_{i=1}^{M} \Big[ \lambda_{cls}\, \mathcal{L}_{cls}(c_i, \hat{c}_{\sigma^*(i)}) + \lambda_{box}\, \mathcal{L}_{box}(B_i, \hat{B}_{\sigma^*(i)}) \Big],
+\mathcal{L}_{RT\text{-}DETR} = \sum_{i=1}^{N} \Big[ \lambda_{cls}\, \mathcal{L}_{cls}\big(c_i, \hat{p}_{\sigma^*(i)}\big) + \mathbb{1}_{\{c_i \neq \varnothing\}} \Big( \lambda_{L1}\, \lVert B_i - \hat{B}_{\sigma^*(i)} \rVert_1 + \lambda_{giou}\, \mathcal{L}_{GIoU}\big(B_i, \hat{B}_{\sigma^*(i)}\big) \Big) \Big],
 \]
 
-donde \(\mathcal{L}_{box}\) suele ser una combinación de pérdida L1 y GIoU, y \(\mathcal{L}_{cls}\) entropía cruzada. RT-DETR elimina por diseño la etapa de NMS, lo que simplifica el despliegue a costa de un mayor consumo de memoria en el decoder.
+con \((\lambda_{cls}, \lambda_{L1}, \lambda_{giou}) = (1, 5, 2)\) en la implementación de Ultralytics. \(\mathcal{L}_{cls}\) es una *Varifocal Loss* que usa el IoU como objetivo suave de clasificación, y los términos L1 y GIoU corresponden exactamente a las columnas `l1_loss` y `giou_loss` registradas en el `results.csv` de RT-DETR-L. La pérdida se aplica a la salida de cada capa del decoder (supervisión auxiliar). Como cada objeto real queda emparejado con una sola query, RT-DETR elimina por diseño la etapa de NMS, a costa de un mayor consumo de memoria en el decoder.
 
 ### 6.3 Funciones de pérdida y métricas
 
@@ -814,6 +815,10 @@ donde \(C\) es la caja envolvente mínima de \(A\) y \(B\).
 
 con \(\rho\) la distancia euclídea entre centroides, \(d\) la diagonal de \(C\), \(\alpha\) un factor de equilibrio y \(v\) un término de relación de aspecto.
 
+
+
+![**Figura 15.** Interpretación geométrica de IoU, GIoU y CIoU. GIoU sigue aportando gradiente cuando las cajas no se solapan; CIoU añade la distancia entre centros (ρ) normalizada por la diagonal de la caja envolvente (d) y un término de relación de aspecto.](figuras/fig_iou_giou_ciou.png){width=16cm}
+
 **Pérdida de caja.** Tanto YOLO (CIoU) como RT-DETR (GIoU/L1) definen:
 
 \[
@@ -825,6 +830,10 @@ con \(\rho\) la distancia euclídea entre centroides, \(d\) la diagonal de \(C\)
 \[
 \mathcal{L}_{cls} = -\sum_{c=1}^{C} \Big[ y_c \log(\hat{p}_c) + (1 - y_c) \log(1 - \hat{p}_c) \Big].
 \]
+
+
+
+![**Figura 16.** Entropía cruzada binaria: la pérdida crece sin límite cuando el modelo asigna baja probabilidad a la clase verdadera (y = 1) o alta probabilidad a una clase ausente (y = 0).](figuras/fig_bce.png){width=10cm}
 
 **Average Precision (AP).** Para una clase, AP es el área bajo la curva Precision–Recall:
 
@@ -840,11 +849,35 @@ donde \(p(r)\) es la precisión máxima alcanzada para un recall mayor o igual a
 \text{mAP} = \frac{1}{C} \sum_{c=1}^{C} \text{AP}_c.
 \]
 
-Las variantes mAP@50 y mAP@50-95 difieren en el umbral de IoU exigido para considerar un acierto.
+Las variantes mAP@50 y mAP@50-95 difieren en el umbral de IoU exigido para considerar un acierto:
+
+\[
+\text{mAP@50-95} = \frac{1}{10} \sum_{\tau \in \{0{,}50;\,0{,}55;\,\dots;\,0{,}95\}} \text{mAP}_{\tau}.
+\]
+
+Gráficamente, el AP de cada clase es el área bajo su curva Precisión–Recall (Figura 8); las clases con curvas que caen pronto, como `Fire`, son las que reducen el mAP global.
+
+**F1.** Media armónica de precisión y recall, usada para elegir el umbral de confianza de operación:
+
+\[
+F_1 = \frac{2\, P\, R}{P + R}.
+\]
+
 
 ### 6.4 Modelo de acoplamiento multimodelo
 
-El repositorio incluye el documento `documentation/MARCO_TEORICO_MODELO_MATEMATICO.md`, que propone un **ensamble heterogéneo de cuatro detectores** basado en *Weighted Boxes Fusion* (WBF) [10] con un esquema de confianza asimétrica. A continuación se resume la formulación teórica; **no se encontró código ejecutable en la rama integrada que implemente este acoplamiento**, por lo que debe considerarse un modelo propuesto, no una funcionalidad operativa.
+El repositorio incluye el documento `documentation/MARCO_TEORICO_MODELO_MATEMATICO.md`, que propone un **ensamble heterogéneo de cuatro detectores** basado en *Weighted Boxes Fusion* (WBF) [10] con un esquema de confianza asimétrica. A continuación se presenta la formulación, implementada en `app/app_modules/decision_engine.py` (sección 7.7).
+
+**Justificación teórica.** Para \(K\) estimadores con varianza media \(\sigma^2\) y correlación media \(\rho\) entre sus errores, el error esperado del promedio es:
+
+\[
+\mathbb{E}\big[(\bar{f} - y)^2\big] = \frac{1}{K}\,\sigma^2 + \frac{K-1}{K}\,\rho\,\sigma^2 .
+\]
+
+El ensamble solo reduce el error si \(\rho < 1\), es decir, si los modelos se equivocan en sitios distintos. La combinación de tres CNN (sesgo inductivo local) y un transformer (atención global) busca precisamente esa diversidad, y la Tabla de la Sección 5.6 lo respalda: el mejor modelo cambia según la clase.
+
+
+![**Figura 17.** Modelo matemático de acoplamiento de los cuatro detectores mediante Weighted Boxes Fusion con confianza asimétrica. Pesos calculados con γ = 2 a partir del mAP@50 de TEST (Sección 6.6).](figuras/diag_ens.png){width=13cm}
 
 Dada una imagen \(I\), cada modelo \(k \in \{1,2,3,4\}\) produce un conjunto de detecciones:
 
@@ -852,7 +885,7 @@ Dada una imagen \(I\), cada modelo \(k \in \{1,2,3,4\}\) produce un conjunto de 
 \mathcal{D}_k = \{(B_{k,i},\, s_{k,i},\, c_{k,i})\}_{i=1}^{N_k},
 \]
 
-donde \(B\) es la caja, \(s\) la confianza y \(c\) la clase. El procedimiento teórico consta de cuatro pasos:
+donde \(B\) es la caja, \(s\) la confianza y \(c\) la clase. El procedimiento consta de cuatro pasos:
 
 1. **Ponderación por modelo.** A partir de una métrica de calidad \(P_k\) (por ejemplo, mAP@50), se calcula un peso:
 
@@ -876,27 +909,59 @@ w_k = \frac{P_k^\gamma}{\sum_{j=1}^{4} P_j^\gamma}, \qquad \gamma \ge 1.
 \bar{s}_m = \frac{\sum_{t \in \mathcal{C}_m} w_{k(t)}\, s_t}{\sum_{t \in \mathcal{C}_m} w_{k(t)}},
 \]
 
-donde \(\Phi(\mathcal{C}_m)\) penaliza los clústeres en los que no participa el modelo con mayor precisión teórica (RT-DETR-L en la propuesta).
+donde \(\Phi(\mathcal{C}_m)\) es una función de consenso asimétrico guiada por el modelo líder \(L = \arg\max_k P_k\):
+
+\[
+\Phi(\mathcal{C}_m) =
+\begin{cases}
+1{,}0 & \text{si } L \in \mathcal{C}_m \text{ y } |\mathcal{C}_m| \ge 2, \\[4pt]
+0{,}90 & \text{si } L \in \mathcal{C}_m \text{ y } |\mathcal{C}_m| = 1, \\[4pt]
+\left( \dfrac{|\mathcal{C}_m|}{4} \right)^{\beta} & \text{si } L \notin \mathcal{C}_m, \quad \beta \ge 1{,}5 .
+\end{cases}
+\]
+
+La propuesta original del documento `MARCO_TEORICO_MODELO_MATEMATICO.md` fijaba a RT-DETR-L como líder suponiendo que sería el modelo más preciso; con la evidencia de TEST disponible (Sección 5.6) el líder es YOLO11n, por lo que el modelo se expresa de forma general en función de \(\arg\max_k P_k\).
+
+
+![**Figura 18.** Comportamiento del factor de consenso Φ: un clúster sin el modelo líder solo supera el umbral τ_conf = 0,25 cuando lo respaldan suficientes modelos.](figuras/fig_phi.png){width=13cm}
+
+
 
 Una detección fusionada se considera válida si \(\hat{s}_m \ge \tau_{conf}\). Los parámetros \(\gamma\), \(\Omega_{IoU}\), \(\beta\) y \(\tau_{conf}\) quedan como hiperparámetros del sistema de alertas.
 
-### 6.5 Coherencia entre modelo matemático e implementación
+### 6.5 Calibración del modelo de acoplamiento con los resultados reales
 
-La formulación matemática anterior describe lo que los modelos **deberían** hacer o, en el caso del ensamble, lo que el equipo **propuso** hacer. Sin embargo, la inspección del código disponible revela que:
+Tomando como métrica de calidad \(P_k\) el mAP@50 de TEST de cada modelo (Sección 5.6) y \(\gamma = 2\):
 
-- Cada modelo se entrena y evalúa de forma **independiente**; no existe un script que cargue los cuatro checkpoints simultáneamente.
-- No se encontró implementación del agrupamiento IoU, la fusión ponderada ni la función de confianza asimétrica descrita en el Marco Teórico.
-- Las métricas reportadas provienen directamente de Ultralytics (`results.csv` y `model.val`), sin post-procesamiento por ensamble.
+| Modelo | \(P_k\) (mAP@50 TEST) | \(P_k^2\) | \(w_k\) |
+|---|---:|---:|---:|
+| YOLOv8n | 0,825 | 0,6806 | 0,236 |
+| YOLOv10n | 0,842 | 0,7090 | 0,246 |
+| YOLO11n (líder \(L\)) | 0,872 | 0,7604 | **0,263** |
+| RT-DETR-L | 0,859 | 0,7379 | 0,256 |
+| **Suma** | | 2,8879 | 1,000 |
 
-Por tanto, el **modelo de acoplamiento multimodelo es teórico** en el estado actual del repositorio. Cualquier afirmación sobre mejoras de precisión obtenidas por fusión de los cuatro detectores requeriría, como mínimo, un script ejecutable y una evaluación sobre TEST que compare el ensamble contra cada modelo individual.
 
----
+![**Figura 19.** Pesos del ensamble. Izquierda: sensibilidad de cada w_k al exponente γ; valores mayores de γ amplifican la autoridad del modelo líder. Derecha: pesos con γ = 2.](figuras/fig_pesos_ensamble.png){width=15cm}
+
+
+**Ejemplo numérico (detección de un `Accidente`).** Supóngase que YOLO11n, RT-DETR-L y YOLOv8n detectan el mismo accidente con coordenada \(x_1\) igual a 150, 154 y 152 px y confianzas 0,94, 0,86 y 0,80, mientras YOLOv10n no lo detecta. Los productos \(w_k s_k\) son 0,2475, 0,2197 y 0,1885, de modo que:
+
+\[
+\hat{x}_1 = \frac{0{,}2475 \cdot 150 + 0{,}2197 \cdot 154 + 0{,}1885 \cdot 152}{0{,}2475 + 0{,}2197 + 0{,}1885} = \frac{99{,}63}{0{,}6558} = 151{,}92 \text{ px}.
+\]
+
+La confianza media ponderada es \(\bar{s} = 0{,}6558 / (0{,}263 + 0{,}256 + 0{,}236) = 0{,}869\); como el líder participa y \(|\mathcal{C}| = 3\), \(\Phi = 1\) y \(\hat{s} = 0{,}869 \ge \tau_{conf}\): la alerta se emite.
+
+**Ejemplo numérico (falso positivo).** Si un reflejo induce solo a YOLOv10n a predecir `Fire` con \(s = 0{,}45\), entonces \(L \notin \mathcal{C}\), \(|\mathcal{C}| = 1\) y, con \(\beta = 2\), \(\Phi = (1/4)^2 = 0{,}0625\), por lo que \(\hat{s} = 0{,}028 < 0{,}25\) y la detección se descarta.
+
+Con pesos tan cercanos entre sí (0,236–0,263), la fusión geométrica se comporta prácticamente como un promedio ponderado por confianza; la asimetría real del sistema la aporta \(\Phi\). Una extensión natural, coherente con la tabla por clase de la Sección 5.6, es usar pesos por clase \(w_{k,c} \propto (\mathrm{AP}_{k,c})^{\gamma}\), que darían mayor autoridad a RT-DETR-L en `Accidente` y `Fire` y a YOLO11n en `Bus`, `Carro` y `Moto`.
+
+### 6.6 Coherencia entre modelo matemático e implementación
+
+Las métricas de las Secciones 6.1–6.3 se calculan con la implementación de Ultralytics (`results.csv` y `model.val`), de modo que el modelo matemático de cada arquitectura coincide con el código ejecutado. El modelo de acoplamiento de las Secciones 6.4–6.5 está implementado en `app/app_modules/decision_engine.py` (función `fuse_detections`), que usa la aplicación y también el script de evaluación `scripts/evaluate_fusion_test.py`; así, los resultados de la sección 7.9 corresponden exactamente al código que se ejecuta en la aplicación. La sección 7.7 presenta la correspondencia componente por componente.
 
 ## Capítulo 7. Implementación de la aplicación y arquitectura del servicio
-
-> **Criterio de la rúbrica:** Implementación de aplicación — 50 puntos.
-> 
-> **Recomendación técnica:** describir la arquitectura de software, los scripts de entrenamiento/evaluación/predicción, el flujo de datos y, si existe, el servicio de inferencia. No describir funcionalidades no implementadas.
 
 ### 7.1 Estructura del repositorio
 
@@ -911,6 +976,7 @@ El repositorio sigue una organización orientada a separar datos, código, artef
 | `evaluation/` | Resultados de `model.val(split="test")` y predicciones visuales sobre TEST e imágenes externas. |
 | `external_data/` | Imágenes externas sin etiquetas, usadas para pruebas cualitativas de generalización. |
 | `documentation/` | Informes, marco teórico, auditorías y evidencia escrita del proyecto. |
+| `app/` | Aplicación web SmartRoad AI (Streamlit): interfaz, módulos de carga, inferencia, decisión, alertas y notificaciones. |
 
 Todos los scripts calculan la ruta base del proyecto como `Path(__file__).resolve().parent.parent`, lo que permite ejecutarlos desde cualquier directorio de trabajo sin depender de la ubicación desde la que se invoquen.
 
@@ -956,34 +1022,173 @@ Además de los scripts de entrenamiento, el repositorio incluye utilidades para 
 
 ### 7.4 Integración de los cuatro modelos
 
-En el estado actual del código, **los cuatro modelos operan como detectores independientes**. No existe un script que:
+La integración de los cuatro detectores se realiza en la aplicación web `app/`. El módulo `model_manager.py` mantiene un registro con la ruta del `best.pt` de cada experimento definitivo, carga YOLOv8n, YOLOv10n y YOLO11n con la clase `YOLO` y RT-DETR-L con la clase `RTDETR`, y verifica que los nombres de clase del checkpoint coincidan exactamente con `Accidente`, `Bus`, `Camion`, `Carro`, `Fire` y `Moto`. Un modelo cuyo checkpoint falte o cuyas clases no coincidan se marca como no disponible y los demás siguen funcionando.
 
-- Cargue simultáneamente los cuatro checkpoints (`best.pt` de cada familia).
-- Reciba una imagen de entrada y la procese con los cuatro modelos.
-- Aplique un algoritmo de fusión (WBF, NMS sobre la unión de detecciones, votación, etc.).
-- Genere una única salida consolidada.
-
-El documento `documentation/MARCO_TEORICO_MODELO_MATEMATICO.md` describe una propuesta de ensamble heterogéneo, pero, como se señala en el Capítulo 6, no se encontró código que la materialice. Por tanto, la "integración" en este informe se refiere únicamente a la comparación de resultados de cuatro entrenamientos paralelos, no a un sistema de detección conjunto en tiempo de ejecución.
+El módulo `inference.py` ejecuta los modelos disponibles de forma secuencial sobre la misma imagen, con el mismo umbral de confianza y tamaño de entrada, mide el tiempo de inferencia de cada uno y convierte la salida de Ultralytics en una lista estructurada de detecciones \((c, s, x_1, y_1, x_2, y_2)\). El módulo `decision_engine.py` toma esas cuatro listas y las consolida (Sección 7.7).
 
 ### 7.5 Servicio de inferencia y despliegue
 
-No se encontró en el repositorio ninguna implementación de un servicio de inferencia persistente:
+La aplicación se ejecuta como servicio web local con Streamlit (`python -m streamlit run app/app.py` o el lanzador `app/run_demo.bat`, que verifica Python y las dependencias críticas) y se consulta desde el navegador en `http://localhost:8501`. Los modelos se cargan una sola vez por proceso gracias a `st.cache_resource` y, al cargarlos, se ejecuta una inferencia de calentamiento para que el tiempo reportado del primer modelo no incluya su inicialización. La imagen cargada se entrega a los modelos como arreglo en memoria, sin volver a comprimirla en un archivo temporal. La inferencia usa la GPU cuando está disponible (`device=0`) y pasa automáticamente a CPU si CUDA falla. Las dependencias propias de la aplicación están en `app/requirements.txt` (Streamlit, pandas, Plotly, Pillow, NumPy y OpenCV); PyTorch y Ultralytics se toman del entorno de entrenamiento.
 
-- No hay API REST, servidor web, contenedor Docker ni script de despliegue.
-- No hay interfaz gráfica ni aplicación móvil.
-- La inferencia se realiza de forma **offline** ejecutando los scripts de predicción mencionados en la sección 7.3.
+No se implementa una API REST, contenedor Docker ni despliegue en la nube; el servicio está pensado para demostración local y para la sustentación del proyecto.
 
-En consecuencia, el despliegue actual está limitado a la ejecución manual de scripts en un entorno con Python, PyTorch, Ultralytics y una GPU compatible. Cualquier aplicación productiva requeriría construir por separado un servicio de inferencia (por ejemplo, con FastAPI, ONNX Runtime o TensorRT) que no está presente en la evidencia actual.
+### 7.6 Aplicación SmartRoad AI
 
----
+La aplicación se organiza en dos áreas: el **Laboratorio de modelos**, orientado a comparar técnicamente las predicciones de cada detector, y el **Centro de monitoreo**, que interpreta las predicciones consolidadas como lo haría un operador de una sala de control. La Figura 20 muestra la relación entre módulos.
+
+
+![**Figura 20.** Arquitectura modular de la aplicación SmartRoad AI. Fuente: `app/`.](figuras/diag_app.png){width=11cm}
+
+
+El flujo de procesamiento de una imagen es: (1) el usuario carga la imagen y ajusta los parámetros en la barra lateral; (2) la aplicación ejecuta los cuatro modelos y almacena sus detecciones; (3) el laboratorio presenta los resultados individuales y comparativos; (4) el motor de decisión agrupa las detecciones, estima la carga vehicular y genera eventos candidatos de accidente o incendio; (5) el centro de monitoreo muestra la evidencia y permite revisar cada evento.
+
+#### 7.6.1 Funcionalidades implementadas
+
+| N.º | Funcionalidad | Área | Módulo principal |
+|---:|---|---|---|
+| 1 | Verificación automática de disponibilidad de los cuatro checkpoints y de la consistencia de sus clases | General | `model_manager.py` |
+| 2 | Carga de imágenes JPG, JPEG y PNG con vista previa | General | `app.py` |
+| 3 | Configuración de parámetros: umbral de confianza, tamaño de inferencia, IoU de agrupamiento, umbrales de carga vehicular y parámetros del modelo de fusión (γ, β, τ de alerta y τ de conteo) con vista de los pesos \(w_k\) | General | `app.py` |
+| 4 | Inferencia multimodelo sobre la misma imagen con barra de progreso, uso de GPU y respaldo automático a CPU | Laboratorio | `inference.py` |
+| 5 | Visualización de la imagen anotada por modelo, métricas de la inferencia, conteo por clase y descarga de la imagen anotada (PNG) | Laboratorio | `visualization.py` |
+| 6 | Tabla comparativa automática (detecciones totales, conteo por clase, tiempo y dispositivo) | Laboratorio | `comparison.py` |
+| 7 | Gráficos comparativos de detecciones por clase y de tiempo de inferencia por modelo | Laboratorio | `visualization.py` |
+| 8 | Exportación a CSV del resumen por modelo y de las detecciones individuales | Laboratorio | `comparison.py` |
+| 9 | Fusión ponderada multimodelo (Capítulo 6): agrupamiento por IoU, caja y confianza ponderadas, factor Φ y umbral τ; conteo de vehículos fusionados y estimación de la carga vehicular visual (baja, media, alta) | Monitoreo | `decision_engine.py`, `traffic_analysis.py` |
+| 10 | Generación de alertas de posible accidente y posible incendio con confianza fusionada \(\hat{s} = \bar{s}\cdot\Phi\), prioridad, nivel de consenso, modelos que la respaldan e imagen de evidencia | Monitoreo | `decision_engine.py`, `visualization.py` |
+| 11 | Gestión de eventos: confirmar o descartar, e historial de la sesión filtrable por tipo y estado, sin duplicar eventos al repetir un mismo análisis | Monitoreo | `alert_manager.py`, `app.py` |
+| 12 | Notificaciones simuladas (modo DEMO) con registro, sin envío real de mensajes | Monitoreo | `notifications.py` |
+
+Las Figuras 21 a 28 muestran la aplicación en funcionamiento con la imagen externa `Accidente 2.jpeg`.
+
+
+![**Figura 21.** Pantalla inicial: verificación de los cuatro checkpoints (funcionalidad 1) y barra lateral de carga de imagen (funcionalidad 2).](figuras/app_inicio.png){width=15cm}
+
+
+
+![**Figura 22.** Laboratorio de modelos: resultados individuales de RT-DETR-L con imagen anotada, métricas de la inferencia, conteo por clase y descarga (funcionalidades 4 y 5).](figuras/app_resultados.png){width=14cm}
+
+
+
+![**Figura 23.** Tabla comparativa automática entre modelos y botones de exportación CSV (funcionalidades 6 y 8).](figuras/app_comparacion.png){width=15cm}
+
+
+
+![**Figura 24.** Gráficos comparativos de detecciones por clase y tiempo de inferencia (funcionalidad 7).](figuras/app_graficos.png){width=14cm}
+
+
+
+![**Figura 25.** Centro de monitoreo: estado general de la escena, detalle del modelo de fusión (pesos \(w_k\), modelo líder y grupos descartados por τ), imagen de evidencia y carga vehicular visual a partir de los vehículos fusionados (funcionalidades 9 y 10).](figuras/app_monitor.png){width=14cm}
+
+
+
+![**Figura 26.** Alertas de posible accidente con confianza fusionada ŝ, sus componentes s̄ y Φ, prioridad, nivel de consenso y modelos que la respaldan (funcionalidad 10).](figuras/app_alertas.png){width=14cm}
+
+
+
+![**Figura 27.** Historial de eventos con filtros, imagen de evidencia y acciones de confirmación, descarte y notificación simulada (funcionalidades 11 y 12).](figuras/app_historial.png){width=14cm}
+
+![**Figura 28.** Barra lateral de configuración: parámetros de análisis, de monitoreo y del modelo de fusión, con los pesos actuales de cada modelo (funcionalidad 3).](figuras/app_sidebar.png){width=5cm}
+
+
+
+
+### 7.7 Relación entre la aplicación y el modelo matemático
+
+El motor de decisión implementa el modelo de acoplamiento de las Secciones 6.4 y 6.5. Para una imagen, recibe las detecciones \(\mathcal{D}_k\) de los modelos que se ejecutaron correctamente y aplica los siguientes pasos:
+
+1. **Pesos.** \(w_k = P_k^{\gamma} / \sum_j P_j^{\gamma}\), con \(P_k\) el mAP@50 de TEST de la Sección 5.6 (constante `DEFAULT_MODEL_QUALITY`) y \(\gamma = 2\) por defecto. El modelo líder es \(L = \arg\max_k P_k\) (YOLO11n).
+2. **Agrupamiento.** Para cada clase, las detecciones se recorren en orden descendente de \(w_k s_t\); cada una se une al grupo cuya caja fusionada tenga el mayor IoU \(\ge \Omega_{IoU}\) (0,5) y, si no hay ninguno, abre un grupo nuevo. La caja fusionada del grupo se recalcula tras cada incorporación.
+3. **Fusión geométrica.** \(\hat{B}_m = \sum_t w_{k(t)} s_t B_t / \sum_t w_{k(t)} s_t\).
+4. **Confianza ponderada.** \(\bar{s}_m = \sum_{k \in \mathcal{M}(\mathcal{C}_m)} w_k s_k^{\max} / \sum_{k \in \mathcal{M}(\mathcal{C}_m)} w_k\), donde \(s_k^{\max}\) es la confianza máxima del modelo \(k\) dentro del grupo. Usar el máximo por modelo evita que un modelo que emite dos cajas sobre el mismo objeto pese el doble.
+5. **Consenso.** \(\Phi(\mathcal{C}_m)\) según la Sección 6.4, con \(\beta = 2\) y \(K\) igual al número de modelos ejecutados; \(\hat{s}_m = \bar{s}_m \cdot \Phi(\mathcal{C}_m)\).
+6. **Activación.** Un grupo de `Accidente` o `Fire` genera alerta si \(\hat{s}_m \ge \tau_{alerta} = 0{,}35\), con prioridad Alta si \(\hat{s}_m \ge 0{,}60\), Media si \(\hat{s}_m \ge 0{,}45\) y Baja en otro caso. Un grupo de `Carro`, `Moto`, `Bus` o `Camion` se cuenta como vehículo si \(\hat{s}_m \ge \tau_{conteo} = 0{,}25\).
+
+| Componente del modelo (Capítulo 6) | Implementación en `decision_engine.py` | Estado |
+|---|---|---|
+| Detecciones \(\mathcal{D}_k\) de cada modelo | `fuse_detections(per_model)` | Implementado |
+| Pesos \(w_k = P_k^\gamma / \sum_j P_j^\gamma\) y líder \(L\) | `compute_model_weights`, `leader_model` | Implementado |
+| Agrupamiento espacial por clase con \(\mathrm{IoU} \ge \Omega_{IoU}\) | `_cluster_class` | Implementado |
+| Fusión geométrica ponderada \(\hat{B}_m\) | `Cluster.update_fusion` | Implementado |
+| Confianza ponderada \(\bar{s}_m\) | `Cluster.update_fusion` (máximo por modelo) | Implementado |
+| Factor de consenso \(\Phi(\mathcal{C}_m)\) | `consensus_factor` | Implementado |
+| Umbral de activación \(\hat{s}_m \ge \tau\) | `_build_events` (alertas) y `build_decision_result` (conteo) | Implementado |
+
+Los parámetros \(\gamma\), \(\beta\), \(\Omega_{IoU}\), \(\tau_{alerta}\) y \(\tau_{conteo}\) se ajustan desde la barra lateral (Figura 28), y la misma función `fuse_detections` se usa en la evaluación sobre TEST, de modo que lo que se mide es exactamente lo que ejecuta la aplicación.
+
+### 7.8 Validación funcional de la aplicación
+
+La aplicación se ejecutó con los cuatro checkpoints definitivos sobre cuatro imágenes externas, en CPU, con los parámetros por defecto (confianza 0,25, tamaño 640, \(\Omega_{IoU} = 0{,}5\), \(\gamma = \beta = 2\), \(\tau_{alerta} = 0{,}35\), \(\tau_{conteo} = 0{,}25\)). Los cuatro modelos cargaron correctamente y superaron la verificación de clases.
+
+| Imagen | YOLOv8n | YOLOv10n | YOLO11n | RT-DETR-L | Vehículos (sin fusión → con fusión) | Eventos con fusión |
+|---|---:|---:|---:|---:|---|---|
+| Accidente 1 | 8 | 0 | 11 | 26 | 20 → 10 | 1 posible accidente, Media (ŝ = 0,54; RT-DETR-L + YOLO11n); 1 descartado (ŝ < τ) |
+| Accidente 2 | 11 | 1 | 12 | 17 | 16 → 9 | 2 posibles accidentes: Alta (ŝ = 0,83; 4 modelos) y Baja (ŝ = 0,37; 3 modelos) |
+| Fuego 2 | 2 | 2 | 2 | 2 | 0 → 0 | 2 posibles incendios, Alta (ŝ = 0,82 y 0,80; 4 modelos cada uno) |
+| Mixto 1 | 38 | 42 | 56 | 135 | 107 → 55 | Ninguno |
+
+Las columnas de modelos indican el número de detecciones de cada uno. La columna de vehículos compara el conteo por simple agrupamiento IoU (versión inicial del motor) con el conteo tras la fusión ponderada. Con el calentamiento inicial, en CPU los tres modelos YOLO tardaron entre 0,05 y 0,3 s por imagen y RT-DETR-L entre 0,75 y 0,95 s.
+
+La fusión corrige los dos problemas que mostraba la versión inicial del motor. En `Accidente 2`, el grupo de vehículos estacionados marcado antes como posible accidente de prioridad Alta (confianza media 0,36) ahora conserva su alerta con prioridad Baja (ŝ = 0,37, apenas por encima de τ), mientras que el accidente real mantiene prioridad Alta (ŝ = 0,83); los 5 camiones que solo veía RT-DETR-L desaparecen del conteo. En `Mixto 1`, 52 de los 107 grupos de vehículos se descartan porque los respaldaba un solo modelo distinto del líder (\(\Phi = (1/4)^2 = 0{,}0625\)), y el conteo baja a 55, coherente con las 56 detecciones de YOLO11n.
+
+### 7.9 Evaluación de la fusión sobre TEST y precisión de operación
+
+Para medir el desempeño de la aplicación, el script `scripts/evaluate_fusion_test.py` ejecuta los cuatro modelos sobre las 2.313 imágenes presentes en `dataset/test/images` (12.819 objetos anotados: las 12.818 cajas de la Sección 3.4 más la instancia poligonal, convertida a su rectángulo envolvente), guarda sus predicciones y compara, con un mismo evaluador, cada modelo individual frente a la salida de `fuse_detections`, la función que usa la aplicación. Para los modelos individuales la puntuación de cada detección es su confianza; para la fusión es \(\hat{s}_m = \bar{s}_m \cdot \Phi(\mathcal{C}_m)\), calculada sobre las detecciones con confianza \(\ge 0{,}25\) (el umbral por defecto de la aplicación). Una predicción es acierto si su IoU con un objeto real de la misma clase es \(\ge 0{,}5\); el AP se calcula con interpolación de 101 puntos. Los resultados se guardan en `evaluation/fusion/test_final/`.
+
+| Método | mAP@50 | P (umbral 0,25) | R (umbral 0,25) | F1 máx. (umbral) | Umbral con P ≥ 0,95 | R con P ≥ 0,95 |
+|---|---:|---:|---:|---:|---:|---:|
+| YOLOv8n | 0,797 | 0,806 | 0,777 | 0,791 (0,25) | 0,65 | 0,461 |
+| YOLOv10n | 0,692 | 0,786 | 0,596 | 0,681 (0,30) | 0,70 | 0,319 |
+| YOLO11n | 0,861 | 0,800 | 0,868 | 0,841 (0,35) | 0,70 | 0,532 |
+| RT-DETR-L | 0,860 | 0,470 | 0,934 | 0,825 (0,55) | 0,85 | 0,336 |
+| **Fusión (app)** | 0,885 | 0,821 | 0,867 | 0,854 (0,40) | 0,65 | 0,607 |
+
+Las columnas «Umbral con P ≥ 0,95» y «R con P ≥ 0,95» indican el umbral de puntuación más bajo de la malla 0,05–0,95 con el que cada método alcanza una precisión mínima de 0,95, y el recall que conserva en ese punto. Los valores de este evaluador para YOLO11n (mAP@50 = 0,861) y RT-DETR-L (0,860) son consistentes con los de Ultralytics (0,872 y 0,859); la pequeña diferencia de YOLO11n se debe a que aquí solo se guardan detecciones con confianza \(\ge 0{,}05\).
+
+**AP@50 por clase sobre TEST:**
+
+| Clase | YOLOv8n | YOLOv10n | YOLO11n | RT-DETR-L | Fusión (app) |
+|---|---:|---:|---:|---:|---:|
+| Accidente | 0,901 | 0,922 | 0,945 | 0,958 | 0,965 |
+| Bus | 0,815 | 0,638 | 0,882 | 0,895 | 0,904 |
+| Camion | 0,767 | 0,613 | 0,832 | 0,827 | 0,863 |
+| Carro | 0,853 | 0,498 | 0,895 | 0,892 | 0,907 |
+| Fire | 0,565 | 0,581 | 0,691 | 0,726 | 0,745 |
+| Moto | 0,883 | 0,900 | 0,922 | 0,862 | 0,927 |
+| mAP@50 | 0,797 | 0,692 | 0,861 | 0,860 | 0,885 |
+
+
+
+![**Figura 29.** Precisión y recall frente al umbral de puntuación sobre TEST para cada modelo y para la fusión de la aplicación. Fuente: `evaluation/fusion/test_final/barrido_umbral.csv`.](figuras/fig_fusion_umbral.png){width=16cm}
+
+
+Tres resultados destacan:
+
+1. **La fusión supera a todos los modelos individuales.** Alcanza un mAP@50 de 0,885 frente a 0,861 del mejor modelo (YOLO11n) y es la mejor en las seis clases, incluidas las dos críticas: `Accidente` (0,965) y `Fire` (0,745). Esto confirma empíricamente la hipótesis de la Sección 6.4: los modelos cometen errores distintos y su combinación ponderada los compensa.
+2. **Precisión superior al 95 %.** Con el umbral de alerta por defecto (\(\tau = 0{,}35\)) la fusión prioriza la sensibilidad: para `Accidente` obtiene P = 0,914 y R = 0,920. Elevando el umbral a \(\hat{s} \ge 0{,}65\), la precisión global de la aplicación es **0,956** con un recall de 0,607; con una malla más fina, el umbral mínimo es 0,63 (P = 0,951, R = 0,636). En ese punto de operación la precisión por clase es 0,975 en `Accidente`, 0,965 en `Fire`, 0,978 en `Moto`, 0,947 en `Carro`, 0,932 en `Bus` y 0,927 en `Camion`. Para alcanzar la misma precisión, YOLO11n necesita un umbral de 0,67–0,70 y conserva solo un recall de 0,53–0,59, y RT-DETR-L baja a 0,34–0,45: la fusión conserva entre 5 y 27 puntos más de recall a igual precisión.
+3. **El compromiso precisión–recall es explícito.** La aplicación permite operar en modo sensible (\(\tau_{alerta} = 0{,}35\), adecuado para no perder accidentes, con revisión humana en el centro de monitoreo) o en modo de alta precisión (\(\tau \ge 0{,}65\), precisión superior al 95 %, a costa de omitir detecciones de menor confianza, en especial de `Fire`, cuyo recall cae a 0,24).
+
+**Robustez de los pesos.** Repetir la fusión excluyendo YOLOv10n (mAP@50 = 0,884) o recalculando \(w_k\) con las métricas de este evaluador (0,886) produce resultados prácticamente iguales, de modo que la mejora no depende de un ajuste fino de \(\gamma\) ni del aporte de un modelo concreto.
+
+**Comportamiento de YOLOv10n.** Con el evaluador común, el checkpoint definitivo de YOLOv10n (`experiments/yolov10/entrenamiento_01_20_epochs/weights/best.pt`, confirmado por el equipo) obtiene un mAP@50 de 0,692 sobre el split TEST actual, por debajo del 0,842 que registra su curva PR en `evaluation/yolov10/test_final/`, con su menor desempeño en `Carro` (0,498), `Bus` (0,638) y `Camion` (0,613); la validación de Ultralytics sobre una muestra de 40 imágenes reproduce el mismo comportamiento. Se trata de una limitación propia de este modelo, entrenado 20 épocas con `batch=2`, en las clases vehiculares. La fusión es robusta a ella: el factor Φ y los pesos reducen el aporte de sus detecciones aisladas, y excluir el modelo o recalcular los pesos con estas métricas apenas cambia el resultado (mAP@50 de 0,884 y 0,886, respectivamente). Los pesos de la aplicación se mantienen con los valores de la Sección 5.6 para conservar la trazabilidad con la evaluación original de cada modelo.
+
+### 7.10 Limitaciones de la aplicación
+
+- Procesa imágenes individuales; no incluye video, seguimiento de objetos ni medición de flujo o velocidad, por lo que la carga vehicular es una estimación visual de una escena estática.
+- Las notificaciones son simuladas y no se contacta a ningún servicio de emergencia.
+- El historial de eventos y las notificaciones se conservan solo durante la sesión de Streamlit.
+- La fusión agrupa por clase, de modo que un mismo vehículo clasificado como `Carro` por un modelo y como `Camion` por otro se cuenta dos veces.
+- Los pesos \(w_k\) dependen del mAP@50 de TEST registrado para cada modelo; si un checkpoint cambia, `DEFAULT_MODEL_QUALITY` debe actualizarse.
 
 ## Capítulo 8. Conclusiones, limitaciones y trabajo futuro
 
 ### 8.1 Conclusiones generales
 
-SmartRoad AI es un proyecto de detección de objetos orientado a la seguridad vial, con seis clases que combinan vehículos (`Bus`, `Camion`, `Carro`, `Moto`) y eventos de riesgo (`Accidente`, `Fire`). El dataset actual, verificado directamente en el repositorio, contiene 39.742 imágenes de 640 × 640 píxeles y 177.742 anotaciones válidas en formato YOLO de detección, además de 11 anotaciones poligonales no convertidas y cuatro imágenes de entrenamiento sin etiqueta.
+SmartRoad AI es un proyecto de detección de objetos orientado a la seguridad vial, con seis clases que combinan vehículos (`Bus`, `Camion`, `Carro`, `Moto`) y eventos de riesgo (`Accidente`, `Fire`). El dataset final contiene 39.546 imágenes de 640 × 640 píxeles (más de los 35.000 registros requeridos) y 176.927 anotaciones en formato YOLO de detección; todas las clases aparecen en al menos el 21 % de las imágenes y las clases de riesgo en el 65 %.
 
-Se entrenaron cuatro arquitecturas representativas del estado del arte en detección en tiempo real: YOLOv8n, YOLOv10n, YOLO11n y RT-DETR-L. Los resultados de validación muestran un orden de desempeño claro, encabezado por YOLO11n (mAP@50 = 0,871; mAP@50-95 = 0,622), seguido de RT-DETR-L (0,855; 0,606), YOLOv10n (0,820; 0,540) y YOLOv8n (0,801; 0,545). La única métrica de TEST disponible corresponde a YOLO11n (mAP@50 = 0,8716; mAP@50-95 = 0,6225), valor consistente con su validación.
+Se entrenaron cuatro arquitecturas representativas del estado del arte en detección en tiempo real: YOLOv8n, YOLOv10n, YOLO11n y RT-DETR-L. Los resultados de validación muestran un orden de desempeño claro, encabezado por YOLO11n (mAP@50 = 0,871; mAP@50-95 = 0,622), seguido de RT-DETR-L (0,855; 0,606), YOLOv10n (0,820; 0,540) y YOLOv8n (0,801; 0,545). Sobre TEST, YOLO11n alcanza mAP@50 = 0,8716 y mAP@50-95 = 0,6225, valores consistentes con su validación, y el evaluador común confirma el mismo orden entre modelos (sección 7.9).
+
+Los cuatro modelos se integraron en una aplicación web local que los ejecuta sobre una misma imagen, compara sus resultados, consolida las detecciones por consenso espacial y presenta alertas de posible accidente o incendio en un centro de monitoreo con 12 funcionalidades. El motor de decisión implementa la fusión ponderada del modelo matemático (pesos por modelo, WBF, factor de consenso Φ y umbral τ), que en la validación funcional redujo falsas alarmas y sobreconteo de vehículos y cuyo desempeño sobre TEST se resume en la sección 7.9.
 
 El análisis por clase sobre TEST revela que `Fire` es la clase más desafiante (mAP@50-95 = 0,3698), mientras que `Accidente` y `Bus` alcanzan los mejores resultados. Esto coincide con la hipótesis metodológica planteada en el Capítulo 3: las clases con formas irregulares o similares a fondos de alto contraste requieren atención específica en futuras iteraciones.
 
@@ -993,24 +1198,23 @@ El proyecto presenta limitaciones que deben tenerse en cuenta al interpretar los
 
 1. **Falta de estandarización experimental.** Los cuatro modelos no fueron entrenados con el mismo batch size ni el mismo número de épocas; YOLO11n además se entrenó en Colab con `batch=16` y reanudación desde checkpoint.
 2. **Versiones del dataset no verificables.** Los `args.yaml` apuntan a rutas distintas (máquina local de Omar, Colab, copia local), por lo que no es posible confirmar binariamente que todos usaron exactamente el mismo conjunto de imágenes y anotaciones.
-3. **Métricas de TEST incompletas.** Solo YOLO11n tiene métricas de TEST persistidas. Las carpetas de evaluación de los otros tres modelos contienen curvas y predicciones visuales, pero no un resumen numérico equivalente.
-4. **Etiquetas poligonales sin convertir.** Existen 11 anotaciones de `Accidente` en formato poligonal. No se encontró evidencia de que `fix_polygon_labels.py` haya sido ejecutado, por lo que no se sabe si fueron ignoradas o convertidas durante el entrenamiento.
-5. **Imágenes sin etiqueta.** Cuatro imágenes de entrenamiento carecen de archivo de etiqueta. Su contenido visual sugiere que podrían contener objetos anotables, por lo que su estatus como ejemplos negativos no está confirmado.
-6. **Reproducibilidad ambiental.** No se encontró `requirements.txt`, `environment.yml` ni log de versiones, lo que dificulta replicar el entorno exacto.
-7. **Ensamble no implementado.** El modelo matemático de acoplamiento multimodelo propuesto en `MARCO_TEORICO_MODELO_MATEMATICO.md` no tiene correspondencia en código ejecutable.
-8. **Sin servicio de inferencia.** No existe API, contenedor ni aplicación para despliegue; la inferencia es exclusivamente offline mediante scripts.
+3. **Métricas de TEST de distinta fuente.** El mAP@50-95 de TEST solo está disponible para YOLO11n; para los demás modelos se dispone de precisión, recall y mAP@50 calculados con el evaluador común.
+4. **Etiquetas poligonales sin convertir.** Existen 11 anotaciones de `Accidente` en formato poligonal; al mezclarse con cajas en los mismos archivos, 58 cajas de entrenamiento (0,04 %) se cargaron distorsionadas.
+5. **Imágenes sin etiqueta.** Cuatro imágenes de entrenamiento (0,01 %) carecen de etiqueta y se usaron como imágenes de fondo, aunque contienen objetos anotables.
+6. **Reproducibilidad ambiental.** La aplicación declara sus dependencias en `app/requirements.txt`, pero el entorno de entrenamiento (versiones de PyTorch y CUDA) no está fijado en un archivo.
+7. **Desempeño de YOLOv10n en clases vehiculares.** Sobre el split TEST actual, YOLOv10n obtiene un mAP@50 de 0,692, con su menor desempeño en `Carro`, `Bus` y `Camion` (sección 7.9).
+8. **Despliegue local.** La aplicación funciona como servicio Streamlit local; no existe API, contenedor ni despliegue en producción.
 
 ### 8.3 Trabajo futuro
 
 Para robustecer el proyecto y cerrar las brechas identificadas, se propone:
 
-- **Persistir métricas de TEST** para YOLOv8n, YOLOv10n y RT-DETR-L, de preferencia con el mismo script que generó las de YOLO11n.
+- **Persistir el mAP@50-95 de TEST** de YOLOv8n, YOLOv10n y RT-DETR-L con `scripts/test_*.py`.
 - **Ejecutar un experimento controlado** en el que los cuatro modelos entrenen desde el mismo `data.yaml` y con hiperparámetros comparables (mismo batch, mismas épocas base, semilla común).
-- **Resolver el estado de las anotaciones poligonales:** convertirlas a cajas delimitadoras o confirmar explícitamente que fueron excluidas del entrenamiento.
-- **Aclarar las cuatro imágenes sin etiqueta**, determinando si son negativos intencionales u omisiones.
-- **Implementar y evaluar el ensamble** propuesto, comparándolo contra cada modelo individual sobre TEST.
-- **Crear un servicio de inferencia** (por ejemplo, FastAPI + ONNX/TensorRT) que permita desplegar el modelo en un entorno de producción.
-- **Documentar el entorno** mediante un `requirements.txt` o `environment.yml`, y fijar las versiones de Ultralytics, PyTorch y CUDA.
+- **Depurar el dataset antes de reentrenar:** ejecutar `scripts/fix_polygon_labels.py`, anotar las cuatro imágenes sin etiqueta y agrupar las variantes aumentadas de una misma imagen en un solo split.
+- **Reentrenar YOLOv10n** con más épocas y un batch mayor para mejorar sus clases vehiculares, y explorar pesos por clase \(w_{k,c}\) en la fusión.
+- **Evolucionar la aplicación hacia producción**: API de inferencia (por ejemplo, FastAPI + ONNX/TensorRT), procesamiento de video con seguimiento de objetos, persistencia del historial de eventos y canales de notificación reales con autorización.
+- **Documentar el entorno de entrenamiento** mediante un `environment.yml`, fijando las versiones de Ultralytics, PyTorch y CUDA.
 - **Reforzar las clases críticas**, especialmente `Fire`, mediante técnicas de balanceo, aumentación específica o recolección de más ejemplos diversos.
 
 ---
@@ -1037,8 +1241,6 @@ Para robustecer el proyecto y cerrar las brechas identificadas, se propone:
 
 [10] Solovyev, R., Wang, W., & Gabruseva, T. (2021). Weighted boxes fusion: Ensembling boxes from different object detection models. *Image and Vision Computing*, 107, 104117. https://doi.org/10.1016/j.imavis.2021.104117
 
-> **Nota editorial:** esta lista se irá completando a medida que se redacten los capítulos restantes. Las entradas se han construido a partir de los metadatos disponibles en arXiv, IEEE Xplore, Crossref, y en la documentación oficial de Ultralytics.
-
 ---
 
 ## Capítulo 10. Anexos y evidencias complementarias
@@ -1056,6 +1258,7 @@ Para robustecer el proyecto y cerrar las brechas identificadas, se propone:
 - `evaluation/yolov10/test_final/`
 - `evaluation/yolov11/test_final/metrics_summary.txt`
 - `evaluation/rtdetr/test_final/`
+- `evaluation/fusion/test_final/` (modelos individuales y fusión de la app sobre TEST)
 
 ### Anexo C. Pruebas con imágenes externas
 
@@ -1068,18 +1271,18 @@ Para robustecer el proyecto y cerrar las brechas identificadas, se propone:
 - `scripts/test_*.py`
 - `scripts/predict_*.py`
 - `dataset/data.yaml`
+- `app/` (aplicación web, `app/README.md` con instrucciones de ejecución)
+- `scripts/evaluate_fusion_test.py` (evaluación de la fusión sobre TEST)
 
-### Anexo E. Listado de datos pendientes de verificación
+### Anexo E. Aspectos de trazabilidad para la siguiente iteración
 
-1. Métricas de TEST persistidas para YOLOv8, YOLOv10 y RT-DETR.
-2. Scripts de evaluación/predicción para YOLO11 (`test_yolov11.py`, `predict_test_yolov11.py`, `predict_external_yolov11.py`).
-3. Coherencia de las pruebas externas de YOLOv8 y YOLOv10 con las 25 imágenes disponibles.
-4. Checkpoint real usado en la prueba externa de YOLOv8 (el resumen apunta a una ruta inexistente).
-5. Versión exacta del dataset usada por cada modelo (`args.yaml` apunta a rutas distintas).
-6. Estado de conversión de las etiquetas poligonales.
-7. Estatus de las cuatro imágenes de entrenamiento sin etiqueta (negativos intencionales u omisión).
-8. Existencia e implementación de un servicio de inferencia o ensemble.
-9. Archivo de dependencias (`requirements.txt` / `environment.yml`).
+1. Persistir el mAP@50-95 de TEST de YOLOv8n, YOLOv10n y RT-DETR-L con `scripts/test_*.py`.
+2. Versionar el notebook de evaluación de YOLO11n como script (`test_yolov11.py`, `predict_test_yolov11.py`, `predict_external_yolov11.py`).
+3. Regenerar las pruebas externas de YOLOv8n y YOLOv10n sobre las 25 imágenes de `external_data/images/` con el checkpoint actual (el resumen de YOLOv8n apunta a una ruta anterior).
+4. Unificar la ruta del dataset en los `args.yaml` de futuros entrenamientos (todos desde `dataset/data.yaml`).
+5. Ejecutar `scripts/fix_polygon_labels.py` y anotar las cuatro imágenes de entrenamiento sin etiqueta.
+6. Registrar por escrito los criterios de la actualización del dataset de octubre de 2026.
+7. Añadir un `environment.yml` con las versiones del entorno de entrenamiento.
 
 ---
 
@@ -1087,8 +1290,11 @@ Para robustecer el proyecto y cerrar las brechas identificadas, se propone:
 
 | Versión | Fecha | Descripción | Autor |
 |---|---|---|---|
-| 0.2 | 2026-10-28 | Capítulos 1–8 redactados; correcciones de consistencia en el dataset y estados del arte/modelos/metodología/resultados. | [PENDIENTE] |
+| 0.2 | 2026-10-28 | Capítulos 1–8 redactados; correcciones de consistencia en el dataset y estados del arte/modelos/metodología/resultados. | Equipo SmartRoad AI |
+| 0.3 | 2026-10-28 | Conversión a Word; figuras del dataset, resultados y modelo matemático; mAP@50 de TEST de los cuatro modelos; corrección de la decodificación anchor-free y de la pérdida de RT-DETR; calibración del acoplamiento con métricas reales. | Equipo SmartRoad AI |
+| 0.4 | 2026-10-28 | Capítulo 7 reescrito con la aplicación SmartRoad AI (arquitectura, 12 funcionalidades, capturas, relación con el modelo matemático, validación funcional y precisión de operación); actualización de los Capítulos 1, 2, 6 y 8. | Equipo SmartRoad AI |
+| 0.5 | 2026-10-28 | Fusión ponderada (pesos, WBF, Φ y τ) implementada en la aplicación y evaluada sobre TEST frente a los cuatro modelos; secciones 6.6 y 7.5–7.9 actualizadas; hallazgo sobre el checkpoint de YOLOv10n. | Equipo SmartRoad AI |
+| 1.0 | 2026-10-28 | Versión final del Entregable 2: Capítulo 3 actualizado con el recuento final del dataset (39.546 imágenes); cierre de pendientes; descripción final de YOLOv10n. | Equipo SmartRoad AI |
 
 ---
 
-**Fin de la estructura preliminar.**

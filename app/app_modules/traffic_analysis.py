@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from typing import Dict
 
 
-VEHICLE_CLASSES = {"Carro", "Moto", "Bus", "Camion"}
+VEHICLE_CLASSES = {"Carro", "Moto", "Bus", "Camion"}  # fuente unica; decision_engine la importa
 
 
 @dataclass
@@ -34,6 +34,11 @@ def assess_traffic(
     high_threshold: int = 10,
 ) -> TrafficAssessment:
     """Clasifica la carga vehicular visual segun umbrales configurables."""
+    if low_threshold >= high_threshold:
+        # Umbrales invertidos o iguales: se ordenan para mantener baja < alta.
+        low_threshold, high_threshold = sorted((low_threshold, high_threshold))
+        if low_threshold == high_threshold:
+            high_threshold = low_threshold + 1
     total = sum(vehicle_counts.get(cls, 0) for cls in VEHICLE_CLASSES)
 
     if total <= low_threshold:

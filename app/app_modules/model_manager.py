@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
+import numpy as np
 import torch
 from ultralytics import RTDETR, YOLO
 
@@ -127,9 +128,10 @@ def _verify_class_names(names: Dict[int, str]) -> tuple[bool, Optional[str]]:
 
 def load_models(
     registry: Dict[str, ModelInfo],
-    device: str | torch.device = "cpu",
+    device: str | torch.device | None = "cpu",
 ) -> Dict[str, ModelLoadResult]:
-    """Carga todos los modelos del registro y reporta el estado individual."""
+    """Carga todos los modelos del registro, reporta el estado individual y, si se
+    indica ``device``, ejecuta una inferencia de calentamiento en ese dispositivo."""
     results: Dict[str, ModelLoadResult] = {}
 
     for key, info in registry.items():
@@ -152,7 +154,34 @@ def load_models(
 
         results[key] = result
 
+    if device is not None:
+        warmup_models(results, device=str(device))
+
     return results
+
+
+def warmup_models(
+    results: Dict[str, ModelLoadResult],
+    device: str = "cpu",
+    imgsz: int = 640,
+) -> None:
+    """Ejecuta una inferencia de calentamiento por modelo.
+
+    La primera inferencia incluye la inicializacion del modelo (y de CUDA), por lo
+    que sin este paso el primer modelo de la lista reporta tiempos inflados.
+    """
+    dummy = np.zeros((imgsz, imgsz, 3), dtype=np.uint8)
+    for result in results.values():
+        if not result.available:
+            continue
+        try:
+            result.model(dummy, imgsz=imgsz, device=device, verbose=False)
+        except Exception:  # noqa: BLE001
+            if device != "cpu":
+                try:
+                    result.model(dummy, imgsz=imgsz, device="cpu", verbose=False)
+                except Exception:  # noqa: BLE001
+                    pass
 
 
 def get_available_device() -> str:

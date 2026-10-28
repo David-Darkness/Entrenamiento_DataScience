@@ -8,13 +8,14 @@ Aplicacion Streamlit con dos areas:
 
 from __future__ import annotations
 
-import tempfile
+import hashlib
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Dict, List
 
+import numpy as np
 import streamlit as st
 from PIL import Image
 
@@ -35,7 +36,13 @@ from app_modules.comparison import (
     export_detections_csv,
     export_summary_csv,
 )
-from app_modules.decision_engine import build_decision_result
+from app_modules.decision_engine import (
+    DEFAULT_MODEL_QUALITY,
+    FusionConfig,
+    build_decision_result,
+    compute_model_weights,
+    leader_model,
+)
 from app_modules.inference import InferenceResult, run_inference
 from app_modules.model_manager import (
     EXPECTED_CLASSES,
@@ -90,6 +97,8 @@ def _init_session_state() -> None:
         "analysis_timestamp": None,
         "events": [],
         "notification_logs": [],
+        "last_analysis_signature": None,
+        "current_event_ids": [],
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -101,11 +110,12 @@ _init_session_state()
 # ---------------------------------------------------------------------------
 # Carga de modelos (con cache para evitar recargas por cada interaccion)
 # ---------------------------------------------------------------------------
-@st.cache_resource(show_spinner="Cargando modelos entrenados...")
+@st.cache_resource(show_spinner="Cargando y calentando los modelos entrenados...")
 def get_loaded_models(project_root: Path) -> Dict[str, ModelLoadResult]:
     registry = build_registry(project_root)
-    # Carga en CPU por defecto; la inferencia puede moverse a CUDA modelo por modelo.
-    return load_models(registry, device="cpu")
+    # Carga los pesos y ejecuta una inferencia de calentamiento en el dispositivo
+    # preferido para que el primer modelo no reporte tiempos inflados.
+    return load_models(registry, device=get_available_device())
 
 
 models_state = get_loaded_models(PROJECT_ROOT)
@@ -188,13 +198,61 @@ traffic_high = st.sidebar.number_input(
     help="Valores mayores se consideran carga visual alta.",
 )
 
-single_model_high_conf = st.sidebar.slider(
-    "Confianza alta para alerta de un modelo",
-    min_value=0.1,
-    max_value=1.0,
-    value=0.7,
+if traffic_low >= traffic_high:
+    st.sidebar.warning(
+        "El umbral de carga baja debe ser menor que el de carga alta; se ordenaran automaticamente."
+    )
+
+st.sidebar.subheader("Modelo de fusion (Cap. 6)")
+fusion_gamma = st.sidebar.slider(
+    "γ — exponente de los pesos w_k",
+    min_value=1.0,
+    max_value=10.0,
+    value=2.0,
+    step=0.5,
+    help="w_k = P_k^γ / Σ P_j^γ, con P_k = mAP@50 de TEST. Valores altos dan mas autoridad al mejor modelo.",
+)
+fusion_beta = st.sidebar.slider(
+    "β — penalizacion sin modelo lider",
+    min_value=1.0,
+    max_value=4.0,
+    value=2.0,
+    step=0.5,
+    help="Si el modelo lider no participa: Φ = (modelos que coinciden / modelos ejecutados)^β.",
+)
+tau_alert = st.sidebar.slider(
+    "τ alerta (Accidente / Fire)",
+    min_value=0.05,
+    max_value=0.95,
+    value=0.35,
     step=0.05,
-    help="Una deteccion aislada con confianza mayor o igual a este valor se clasifica como evidencia media.",
+    help="Solo se emite una alerta si la confianza fusionada ŝ = s̄·Φ es mayor o igual a este valor.",
+)
+tau_count = st.sidebar.slider(
+    "τ conteo de vehiculos",
+    min_value=0.05,
+    max_value=0.95,
+    value=0.25,
+    step=0.05,
+    help="Solo se cuenta un vehiculo si su confianza fusionada ŝ es mayor o igual a este valor.",
+)
+
+_available_names = [
+    result.info.display_name for result in models_state.values() if result.available
+]
+_preview_weights = compute_model_weights(_available_names, DEFAULT_MODEL_QUALITY, fusion_gamma)
+with st.sidebar.expander("Pesos actuales de los modelos"):
+    _leader = leader_model(_preview_weights)
+    for _name, _w in sorted(_preview_weights.items(), key=lambda kv: -kv[1]):
+        _tag = " (lider)" if _name == _leader else ""
+        st.write(f"- {_name}{_tag}: P = {DEFAULT_MODEL_QUALITY.get(_name, 0):.3f} → w = {_w:.3f}")
+
+fusion_cfg = FusionConfig(
+    iou_threshold=float(iou_threshold),
+    gamma=float(fusion_gamma),
+    beta=float(fusion_beta),
+    tau_alert=float(tau_alert),
+    tau_count=float(tau_count),
 )
 
 preferred_device = get_available_device()
@@ -223,6 +281,7 @@ st.sidebar.markdown(
 # ---------------------------------------------------------------------------
 if uploaded_file is not None:
     try:
+        uploaded_bytes = uploaded_file.getvalue()
         original_image = Image.open(uploaded_file).convert("RGB")
     except Exception as exc:  # noqa: BLE001
         st.error(f"No se pudo abrir la imagen: {exc}")
@@ -244,12 +303,9 @@ run_analysis = st.button(
 # Ejecucion secuencial de los modelos
 # ---------------------------------------------------------------------------
 if run_analysis:
-    # Guardar imagen temporalmente para que Ultralytics pueda leer la ruta
-    with tempfile.NamedTemporaryFile(
-        suffix=Path(uploaded_file.name).suffix, delete=False
-    ) as tmp:
-        tmp_path = Path(tmp.name)
-        original_image.save(tmp_path)
+    # Se pasa la imagen como arreglo BGR (formato de OpenCV/Ultralytics) para no
+    # volver a comprimirla en un archivo temporal antes de la inferencia.
+    image_bgr = np.ascontiguousarray(np.array(original_image)[..., ::-1])
 
     all_results: List[InferenceResult] = []
     progress_bar = st.progress(0.0, text="Iniciando analisis multimodelo...")
@@ -270,7 +326,7 @@ if run_analysis:
             model=result_state.model,
             model_key=result_state.info.key,
             model_name=result_state.info.display_name,
-            image_path=str(tmp_path),
+            image_path=image_bgr,
             names=result_state.names or EXPECTED_CLASSES,
             imgsz=int(imgsz),
             conf=float(confidence),
@@ -282,45 +338,52 @@ if run_analysis:
     progress_bar.progress(1.0, text="Analisis completado")
     progress_bar.empty()
 
-    try:
-        tmp_path.unlink(missing_ok=True)
-    except Exception:  # noqa: BLE001
-        pass
-
-    # Motor de decisiones
+    # Motor de decisiones (fusion ponderada del Capitulo 6)
     decision = build_decision_result(
         all_results,
         traffic_low_threshold=int(traffic_low),
         traffic_high_threshold=int(traffic_high),
         iou_threshold=float(iou_threshold),
-        single_model_high_conf=float(single_model_high_conf),
+        cfg=fusion_cfg,
     )
 
-    # Generar eventos con imagen de evidencia
-    new_events: List[MonitoredEvent] = []
-    for candidate in decision.accident_events + decision.fire_events:
-        location = candidate.consensus_boxes[0] if candidate.consensus_boxes else None
-        evidence_img = draw_alert_evidence(
-            original_image,
-            [SimpleNamespace(event_type=candidate.event_type, priority=candidate.priority, location_hint=location)],
-        )
-        event = create_event(
-            event_type=candidate.event_type,
-            priority=candidate.priority,
-            confidence=candidate.confidence,
-            supporting_models=candidate.supporting_models,
-            evidence_level=candidate.evidence_level,
-            explanation=candidate.explanation,
-            evidence_image=evidence_img,
-            location_hint=location,
-        )
-        add_event(st.session_state.events, event)
-        new_events.append(event)
+    # Firma del analisis: misma imagen + mismos parametros => no duplicar eventos.
+    signature = hashlib.sha1(
+        uploaded_bytes
+        + repr((float(confidence), int(imgsz), fusion_cfg.iou_threshold, fusion_cfg.gamma,
+                fusion_cfg.beta, fusion_cfg.tau_alert, fusion_cfg.tau_count)).encode()
+    ).hexdigest()
+    is_repeated = signature == st.session_state.last_analysis_signature
 
-    # Simular notificaciones para eventos de alta prioridad
-    for event in new_events:
-        if event.priority in ("Alta", "Media"):
-            simulate_notification(event, logs=st.session_state.notification_logs)
+    if not is_repeated:
+        # Generar eventos con imagen de evidencia
+        new_events: List[MonitoredEvent] = []
+        for candidate in decision.accident_events + decision.fire_events:
+            location = candidate.consensus_boxes[0] if candidate.consensus_boxes else None
+            evidence_img = draw_alert_evidence(
+                original_image,
+                [SimpleNamespace(event_type=candidate.event_type, priority=candidate.priority, location_hint=location)],
+            )
+            event = create_event(
+                event_type=candidate.event_type,
+                priority=candidate.priority,
+                confidence=candidate.confidence,
+                supporting_models=candidate.supporting_models,
+                evidence_level=candidate.evidence_level,
+                explanation=candidate.explanation,
+                evidence_image=evidence_img,
+                location_hint=location,
+            )
+            add_event(st.session_state.events, event)
+            new_events.append(event)
+
+        # Simular notificaciones para eventos de prioridad alta o media
+        for event in new_events:
+            if event.priority in ("Alta", "Media"):
+                simulate_notification(event, logs=st.session_state.notification_logs)
+
+        st.session_state.current_event_ids = [e.event_id for e in new_events]
+        st.session_state.last_analysis_signature = signature
 
     # Guardar en estado de sesion
     st.session_state.inference_results = all_results
@@ -328,6 +391,8 @@ if run_analysis:
     st.session_state.original_image = original_image
     st.session_state.analysis_timestamp = datetime.now()
 
+    if is_repeated:
+        st.info("Esta imagen ya se analizo con los mismos parametros; no se duplicaron eventos en el historial.")
     st.success("Analisis completado. Consulta los resultados en las pestanas.")
 
 # ---------------------------------------------------------------------------
@@ -467,14 +532,31 @@ with tab_monitor:
 
     st.caption(decision.uncertainty_note)
 
+    with st.expander("Detalle del modelo de fusion", expanded=False):
+        weight_rows = [
+            {
+                "Modelo": name + (" (lider)" if name == decision.leader else ""),
+                "P_k (mAP@50 TEST)": DEFAULT_MODEL_QUALITY.get(name, float("nan")),
+                "Peso w_k": round(w, 4),
+            }
+            for name, w in sorted(decision.model_weights.items(), key=lambda kv: -kv[1])
+        ]
+        st.dataframe(weight_rows, use_container_width=True, hide_index=True)
+        st.caption(
+            f"Grupos descartados por ŝ < τ: {decision.discarded_vehicles} de vehiculos "
+            f"(τ = {fusion_cfg.tau_count:.2f}) y {decision.discarded_alerts} de eventos criticos "
+            f"(τ = {fusion_cfg.tau_alert:.2f})."
+        )
+
     mon_cols = st.columns([3, 2])
     with mon_cols[0]:
         st.subheader("Imagen de evidencia")
         if decision.accident_events or decision.fire_events:
+            current_ids = set(st.session_state.current_event_ids)
             evidence_events = [
                 e
-                for e in st.session_state.events[-len(decision.accident_events) - len(decision.fire_events):]
-                if e.location_hint is not None
+                for e in st.session_state.events
+                if e.event_id in current_ids and e.location_hint is not None
             ]
             evidence_img = draw_alert_evidence(base_image, evidence_events)
             st.image(evidence_img, caption="Eventos criticos detectados", use_container_width=True)
@@ -508,14 +590,16 @@ with tab_monitor:
         for candidate in all_alert_candidates:
             icon = "🚨" if candidate.event_type == "POSIBLE ACCIDENTE" else "🔥"
             with st.expander(
-                f"{icon} {candidate.event_type} — evidencia {candidate.evidence_level.split(':')[0]}",
+                f"{icon} {candidate.event_type} — prioridad {candidate.priority} (ŝ = {candidate.confidence:.2f})",
                 expanded=True,
             ):
                 alert_cols = st.columns([2, 3])
                 with alert_cols[0]:
                     st.markdown(f"**Prioridad:** {candidate.priority}")
-                    st.markdown(f"**Confianza:** {candidate.confidence:.2f}")
+                    st.markdown(f"**Confianza fusionada ŝ:** {candidate.confidence:.2f}")
+                    st.markdown(f"**s̄ = {candidate.mean_score:.2f} · Φ = {candidate.phi:.2f}**")
                     st.markdown(f"**Modelos:** {', '.join(candidate.supporting_models)}")
+                    st.markdown(f"**Evidencia:** {candidate.evidence_level}")
                 with alert_cols[1]:
                     st.markdown(f"**Explicacion:** {candidate.explanation}")
 

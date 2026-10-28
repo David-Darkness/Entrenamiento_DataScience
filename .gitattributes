@@ -1,0 +1,10 @@
+# Fines de linea: LF dentro del repositorio, formato nativo en cada equipo.
+* text=auto
+
+# Archivos binarios (no se normalizan)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.pt binary
+*.pdf binary
+*.docx binary

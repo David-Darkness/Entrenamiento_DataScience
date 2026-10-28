@@ -87,7 +87,7 @@ def _parse_detections(result: Any, names: Dict[int, str]) -> List[Detection]:
 
 def _run_once(
     model: Any,
-    image_path: str,
+    image_path: Any,
     imgsz: int,
     conf: float,
     device: str,
@@ -116,14 +116,18 @@ def run_inference(
     model: Any,
     model_key: str,
     model_name: str,
-    image_path: str,
+    image_path: Any,
     names: Dict[int, str],
     imgsz: int = 640,
     conf: float = 0.25,
     preferred_device: str = "0",
     allow_cpu_fallback: bool = True,
 ) -> InferenceResult:
-    """Ejecuta inferencia, gestionando fallback a CPU si CUDA falla por memoria."""
+    """Ejecuta inferencia, gestionando fallback a CPU si CUDA falla por memoria.
+
+    ``image_path`` puede ser una ruta o un arreglo numpy BGR (H, W, 3); la
+    aplicacion pasa el arreglo directamente para evitar recomprimir la imagen.
+    """
     result = InferenceResult(model_key=model_key, model_name=model_name)
 
     devices_to_try: List[str] = [preferred_device]

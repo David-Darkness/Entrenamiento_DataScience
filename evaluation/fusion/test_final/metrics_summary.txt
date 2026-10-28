@@ -1,0 +1,19 @@
+SMARTROAD AI - Evaluacion TEST: modelos individuales vs fusion ponderada (app)
+Imagenes: 2313 | objetos GT: 12819 | IoU de acierto: 0.5
+Fusion: gamma=2.0, beta=2.0, Omega_IoU=0.5, conf previa=0.25, lider=YOLO11n, pesos={'YOLOv8n': 0.236, 'YOLOv10n': 0.245, 'YOLO11n': 0.263, 'RT-DETR-L': 0.256}
+
+Metodo          mAP@50  P@0.25  R@0.25   F1max  u(F1)  u(P>=.95)  R(P>=.95)
+YOLOv8n         0.7973  0.8057  0.7772  0.7912   0.25       0.65     0.4606
+YOLOv10n        0.6920  0.7862  0.5960  0.6810   0.30       0.70     0.3187
+YOLO11n         0.8610  0.7999  0.8682  0.8410   0.35       0.70     0.5320
+RT-DETR-L       0.8599  0.4704  0.9345  0.8245   0.55       0.85     0.3356
+Fusión (app)    0.8852  0.8208  0.8673  0.8537   0.40       0.65     0.6071
+
+AP@50 por clase:
+Clase             YOLOv8n      YOLOv10n       YOLO11n     RT-DETR-L  Fusión (app)
+Accidente          0.9014        0.9217        0.9449        0.9577        0.9647
+Bus                0.8146        0.6381        0.8821        0.8948        0.9044
+Camion             0.7671        0.6125        0.8318        0.8267        0.8628
+Carro              0.8527        0.4981        0.8948        0.8920        0.9074
+Fire               0.5650        0.5812        0.6905        0.7261        0.7454
+Moto               0.8831        0.9003        0.9219        0.8621        0.9266

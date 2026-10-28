@@ -76,6 +76,7 @@ app/
 - Ejecucion automatica de los cuatro modelos sobre la misma imagen.
 - Vista previa de la imagen original e imagenes anotadas por modelo.
 - Umbral de confianza configurable (predeterminado `0.25`).
+- Calentamiento de los modelos al cargarlos, para que el tiempo de inferencia del primer modelo no incluya su inicializacion.
 - Tamano de inferencia configurable (predeterminado `640`).
 - Tabla comparativa con detecciones totales, conteo por clase y tiempos.
 - Graficos comparativos de detecciones por clase y tiempos de inferencia.
@@ -92,25 +93,32 @@ app/
 - **Carga vehicular visual**: total estimado y desglose por clase, con umbrales configurables.
 - **Alertas de posibles accidentes**: eventos `POSIBLE ACCIDENTE` con prioridad, modelos que respaldan la alerta y evidencia de consenso.
 - **Alertas de posible incendio**: eventos `POSIBLE INCENDIO` con recomendacion de verificacion; no contacta automaticamente a servicios de emergencia.
+- **Detalle del modelo de fusion**: pesos `w_k` de cada modelo, modelo lider y numero de grupos descartados por el umbral `τ`.
 - **Gestion de estados**: cada evento puede marcarse como `Pendiente de revision`, `Confirmada` o `Descartada`.
-- **Historial de eventos**: filtrable por tipo y estado; se mantiene durante la sesion de Streamlit.
+- **Historial de eventos**: filtrable por tipo y estado; se mantiene durante la sesion de Streamlit. Analizar dos veces la misma imagen con los mismos parametros no duplica eventos.
 - **Notificaciones DEMO**: simula el envio de alertas sin enviar mensajes reales; prepara la arquitectura para canales futuros.
 
-### Reglas del motor de decision
+### Motor de decision: fusion ponderada (Capitulo 6 del informe tecnico)
 
-- **Deduplicacion**: las detecciones de la misma clase provenientes de distintos modelos se agrupan mediante IoU. Cada grupo se cuenta como un unico objeto estimado.
-- **Consenso para Accidente/Fire**:
-  - **Alta**: el evento es detectado por dos o mas modelos con coincidencia espacial.
-  - **Media**: un solo modelo detecta el evento con confianza alta (configurable, predeterminado `>= 0.70`).
-  - **Baja**: deteccion aislada de baja confianza; se genera una alerta pendiente de verificacion.
-- **Carga vehicular visual**: se calcula a partir de los vehiculos deduplicados (`Carro`, `Moto`, `Bus`, `Camion`) y se clasifica con umbrales configurables (baja/medio/alta).
+`app_modules/decision_engine.py` implementa el modelo matematico de acoplamiento:
+
+1. **Pesos por modelo**: `w_k = P_k^γ / Σ P_j^γ`, con `P_k` = mAP@50 de TEST (`DEFAULT_MODEL_QUALITY`) y `γ = 2` por defecto.
+2. **Agrupamiento espacial**: por clase, cada deteccion se une al grupo cuya caja fusionada tenga mayor IoU `>= Ω_IoU` (0.5 por defecto).
+3. **Fusion geometrica**: `B = Σ w_k·s·B / Σ w_k·s` (Weighted Boxes Fusion).
+4. **Confianza ponderada**: `s̄ = Σ w_k·s_k / Σ w_k`, con `s_k` la confianza maxima del modelo `k` en el grupo.
+5. **Consenso asimetrico**: `ŝ = s̄·Φ`, donde el modelo lider es `L = argmax P_k` (YOLO11n) y
+   `Φ = 1` si `L` participa con al menos otro modelo, `Φ = 0.90` si solo detecta `L` y `Φ = (n/K)^β` si `L` no participa.
+6. **Activacion**: solo se emite una alerta de `Accidente`/`Fire` si `ŝ >= τ_alerta` (0.35) y solo se cuenta un vehiculo si `ŝ >= τ_conteo` (0.25).
+   Prioridad: Alta si `ŝ >= 0.60`, Media si `ŝ >= 0.45`, Baja en otro caso.
+
+`γ`, `β`, `τ_alerta`, `τ_conteo` e `Ω_IoU` se ajustan desde la barra lateral. La misma funcion `fuse_detections` se usa en `scripts/evaluate_fusion_test.py` para medir la fusion sobre TEST.
 
 ## Limitaciones
 
 - El conteo por IoU asume que cajas superpuestas de la misma clase corresponden al mismo objeto. Si los modelos alinean mal las cajas, el conteo puede ser inexacto.
 - Una imagen aislada no permite determinar velocidad, flujo vehicular por unidad de tiempo ni congestion real.
 - No se implementa seguimiento de objetos ni procesamiento de video; la arquitectura esta preparada para incorporarlos en una fase posterior.
-- No se presenta fusion multimodelo (WBF) como funcionalidad implementada.
+- La agrupacion es por clase: un mismo vehiculo clasificado como `Carro` por un modelo y `Camion` por otro produce dos grupos.
 - El centro de monitoreo no envia notificaciones reales ni contacta servicios de emergencia; la seccion de notificaciones es una simulacion DEMO.
 - El historial de eventos se pierde al reiniciar la sesion de Streamlit, salvo que se implemente persistencia externa.
 
