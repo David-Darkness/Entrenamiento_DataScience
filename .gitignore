@@ -21,3 +21,6 @@ logs/
 # Archivos temporales del sistema
 .DS_Store
 Thumbs.db
+
+experiments/rtdetr/entrenamiento_01_25_epochs/weights/epoch*.pt
+experiments/yolov11/entrenamiento_01_20_epochs/weights/epoch*.pt

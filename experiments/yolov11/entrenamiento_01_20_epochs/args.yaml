@@ -1,9 +1,9 @@
 task: detect
 mode: train
-model: C:\Users\JOREL\Documents\Universidad\Semestre 7\Electiva de Ciencias de la
-  Computacion II\Proyecto final\Desarrollo\Entrenamiento_DataScience\models\base\yolo11n.pt
-data: C:\Users\JOREL\Documents\Universidad\Semestre 7\Electiva de Ciencias de la Computacion
-  II\Proyecto final\Desarrollo\Entrenamiento_DataScience\dataset\data.yaml
+model: C:\Users\polan\USCO\SEMESTRE SIETE 2026-2\ELECTIVA CIENCIAS DE LA COMPUTACIÓN
+  II\Entrenamiento_Proyecto\models\base\yolo11n.pt
+data: C:\Users\polan\USCO\SEMESTRE SIETE 2026-2\ELECTIVA CIENCIAS DE LA COMPUTACIÓN
+  II\Entrenamiento_Proyecto\dataset\data.yaml
 epochs: 20
 time: null
 patience: 10
@@ -12,10 +12,10 @@ imgsz: 640
 save: true
 save_period: 1
 cache: false
-device: cpu
+device: '0'
 workers: 0
-project: C:\Users\JOREL\Documents\Universidad\Semestre 7\Electiva de Ciencias de la
-  Computacion II\Proyecto final\Desarrollo\Entrenamiento_DataScience\experiments\yolov11
+project: C:\Users\polan\USCO\SEMESTRE SIETE 2026-2\ELECTIVA CIENCIAS DE LA COMPUTACIÓN
+  II\Entrenamiento_Proyecto\experiments\yolov11
 name: entrenamiento_01_20_epochs
 exist_ok: false
 pretrained: true
@@ -29,7 +29,7 @@ rect: false
 cos_lr: false
 close_mosaic: 10
 resume: false
-amp: false
+amp: true
 fraction: 1.0
 profile: false
 freeze: null
@@ -68,6 +68,7 @@ show_conf: true
 show_boxes: true
 line_width: null
 format: torchscript
+keras: false
 optimize: false
 dynamic: false
 simplify: true
@@ -114,5 +115,5 @@ auto_augment: randaugment
 erasing: 0.4
 cfg: null
 tracker: tracktrack.yaml
-save_dir: C:\Users\JOREL\Documents\Universidad\Semestre 7\Electiva de Ciencias de
-  la Computacion II\Proyecto final\Desarrollo\Entrenamiento_DataScience\experiments\yolov11\entrenamiento_01_20_epochs
+save_dir: C:\Users\polan\USCO\SEMESTRE SIETE 2026-2\ELECTIVA CIENCIAS DE LA COMPUTACIÓN
+  II\Entrenamiento_Proyecto\experiments\yolov11\entrenamiento_01_20_epochs
