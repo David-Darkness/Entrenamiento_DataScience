@@ -1,9 +1,10 @@
-# SmartRoad AI — Sistema de Deteccion y Comparacion Multimodelo
+# SmartRoad AI — Sistema inteligente de monitoreo vial multimodelo
 
-Aplicacion web local construida con **Streamlit** que ejecuta los cuatro modelos entrenados del proyecto SmartRoad AI sobre una misma imagen. Ofrece dos areas diferenciadas:
+Aplicacion web local construida con **Streamlit** que ejecuta los cuatro modelos entrenados del proyecto SmartRoad AI sobre una misma imagen. Ofrece tres areas diferenciadas:
 
-1. **Laboratorio de modelos**: comparacion tecnica de las detecciones individuales.
-2. **Centro de monitoreo**: interpretacion de las predicciones, indicadores de trafico y gestion de alertas.
+1. **Dashboard**: resumen del estado del sistema, modelos disponibles y alertas pendientes.
+2. **Centro de monitoreo**: carga de imagen con **analisis automatico**, indicadores de trafico y gestion de alertas.
+3. **Laboratorio de modelos**: comparacion tecnica individual de YOLOv8n, YOLOv10n, YOLO11n y RT-DETR-L.
 
 ## Modelos soportados
 
@@ -56,6 +57,8 @@ app/
 ├── requirements.txt             # Dependencias especificas de la app
 ├── run_demo.bat                # Lanzador para Windows
 ├── README.md                   # Este archivo
+├── .streamlit/
+│   └── config.toml            # Tema oscuro y configuracion de Streamlit
 └── app_modules/
     ├── __init__.py
     ├── model_manager.py        # Carga y verificacion de checkpoints
@@ -70,45 +73,57 @@ app/
 
 ## Funcionalidades
 
-### Laboratorio de modelos
+### Dashboard
 
-- Carga de imagenes JPG, JPEG y PNG.
-- Ejecucion automatica de los cuatro modelos sobre la misma imagen.
-- Vista previa de la imagen original e imagenes anotadas por modelo.
-- Umbral de confianza configurable (predeterminado `0.25`).
-- Tamano de inferencia configurable (predeterminado `640`).
-- Tabla comparativa con detecciones totales, conteo por clase y tiempos.
-- Graficos comparativos de detecciones por clase y tiempos de inferencia.
-- Exportacion de CSV:
-  - `comparacion_resumen_smartroad.csv` — resumen por modelo.
-  - `detecciones_individuales_smartroad.csv` — detecciones individuales.
-- Gestion de errores individual: si un modelo falla, los demas continuan.
-- Fallback a CPU si CUDA produce un error de memoria.
+- Estado de disponibilidad de los cuatro modelos.
+- Contadores de analisis realizados, alertas pendientes, posibles accidentes e incendios.
+- Resumen del ultimo analisis con imagen y hora.
+- Boton principal para abrir el Centro de monitoreo.
 
 ### Centro de monitoreo
 
-- **Imagen de evidencia**: imagen original con recuadros sobre eventos criticos.
-- **Estado general de la escena**: vehiculos estimados, alertas activas, carga vehicular y hora del analisis.
-- **Carga vehicular visual**: total estimado y desglose por clase, con umbrales configurables.
-- **Alertas de posibles accidentes**: eventos `POSIBLE ACCIDENTE` con prioridad, modelos que respaldan la alerta y evidencia de consenso.
-- **Alertas de posible incendio**: eventos `POSIBLE INCENDIO` con recomendacion de verificacion; no contacta automaticamente a servicios de emergencia.
-- **Gestion de estados**: cada evento puede marcarse como `Pendiente de revision`, `Confirmada` o `Descartada`.
-- **Historial de eventos**: filtrable por tipo y estado; se mantiene durante la sesion de Streamlit.
-- **Notificaciones DEMO**: simula el envio de alertas sin enviar mensajes reales; prepara la arquitectura para canales futuros.
+- **Analisis automatico**: al cargar una imagen se ejecutan los cuatro modelos sin necesidad de pulsar un segundo boton.
+- Barra de progreso con el modelo que se esta ejecutando.
+- Imagen de evidencia con recuadros sobre eventos criticos.
+- Estado general de la escena: vehiculos estimados, alertas activas y carga vehicular.
+- Indicador de **carga vehicular visual** con desglose por clase.
+- Alertas de posibles accidentes e incendios con prioridad, modelos que respaldan la alerta y nivel de evidencia.
+- Confirmacion o descarte de eventos por parte del operador.
+- Historial de eventos filtrable por tipo y estado.
+- Registro de notificaciones DEMO (sin envio real).
 
-### Reglas del motor de decision
+### Laboratorio de modelos
+
+- Comparacion tecnica de los cuatro modelos sobre la ultima imagen analizada.
+- Imagen anotada por modelo, conteo por clase, coordenadas y confianza.
+- Tabla comparativa con tiempos de inferencia.
+- Graficos de detecciones por clase y tiempos.
+- Exportacion CSV de resumen y detecciones individuales.
+
+## Analisis automatico y control de re-ejecucion
+
+La aplicacion detecta una nueva imagen mediante el **hash MD5** de su contenido. Solo vuelve a ejecutar los cuatro modelos cuando ocurre alguna de estas condiciones:
+
+- Se carga una imagen con hash diferente al ultimo analisis.
+- Se modifica algun parametro que afecta el analisis (umbral de confianza, tamano de inferencia, IoU de deduplicacion, umbrales de carga vehicular o confianza alta de un modelo).
+
+Si se navega entre paginas, se cambia un widget o se produce un rerun de Streamlit sin cambiar la imagen ni los parametros, **no se re-ejecutan los modelos**.
+
+Al eliminar la imagen del centro de monitoreo se limpian los resultados visuales actuales, pero se conserva el historial de eventos de la sesion.
+
+## Reglas del motor de decision
 
 - **Deduplicacion**: las detecciones de la misma clase provenientes de distintos modelos se agrupan mediante IoU. Cada grupo se cuenta como un unico objeto estimado.
 - **Consenso para Accidente/Fire**:
   - **Alta**: el evento es detectado por dos o mas modelos con coincidencia espacial.
   - **Media**: un solo modelo detecta el evento con confianza alta (configurable, predeterminado `>= 0.70`).
   - **Baja**: deteccion aislada de baja confianza; se genera una alerta pendiente de verificacion.
-- **Carga vehicular visual**: se calcula a partir de los vehiculos deduplicados (`Carro`, `Moto`, `Bus`, `Camion`) y se clasifica con umbrales configurables (baja/medio/alta).
+- **Carga vehicular visual**: se calcula a partir de los vehiculos deduplicados (`Carro`, `Moto`, `Bus`, `Camion`) y se clasifica con umbrales configurables.
 
 ## Limitaciones
 
 - El conteo por IoU asume que cajas superpuestas de la misma clase corresponden al mismo objeto. Si los modelos alinean mal las cajas, el conteo puede ser inexacto.
-- Una imagen aislada no permite determinar velocidad, flujo vehicular por unidad de tiempo ni congestion real.
+- Una imagen aislada no permite determinar velocidad, flujo ni congestion reales.
 - No se implementa seguimiento de objetos ni procesamiento de video; la arquitectura esta preparada para incorporarlos en una fase posterior.
 - No se presenta fusion multimodelo (WBF) como funcionalidad implementada.
 - El centro de monitoreo no envia notificaciones reales ni contacta servicios de emergencia; la seccion de notificaciones es una simulacion DEMO.
