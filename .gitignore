@@ -22,5 +22,13 @@ logs/
 .DS_Store
 Thumbs.db
 
+# Caché de Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Pesos intermedios de RT-DETR
 experiments/rtdetr/entrenamiento_01_25_epochs/weights/epoch*.pt
-experiments/yolov11/entrenamiento_01_20_epochs/weights/epoch*.pt
+
+# Carpetas por defecto de Ultralytics (nunca deben crearse)
+runs/
