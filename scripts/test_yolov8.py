@@ -9,7 +9,7 @@ from ultralytics import YOLO
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 
 # Modelo entrenado (Corregido según la ruta de guardado del entrenamiento)
-MODEL_PATH = PROJECT_DIR / "runs" / "experiments" / "yolov8" / "yolov8n_20epochs-2" / "weights" / "best.pt"
+MODEL_PATH = PROJECT_DIR / "experiments" / "yolov8" / "yolov8n_20epochs-2" / "weights" / "best.pt"
 
 # Dataset
 DATA_PATH = PROJECT_DIR / "dataset" / "data.yaml"

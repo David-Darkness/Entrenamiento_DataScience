@@ -1,15 +1,19 @@
+from pathlib import Path
+
 from ultralytics import YOLO
 
 # ============================================================
 # SMARTROAD AI - Entrenamiento YOLOv8n
 # ============================================================
 
+PROJECT_DIR = Path(__file__).resolve().parent.parent
+
 # Modelo base preentrenado
-model = YOLO("../models/base/yolov8n.pt")
+model = YOLO(str(PROJECT_DIR / "models" / "base" / "yolov8n.pt"))
 
 # Entrenamiento
 results = model.train(
-    data="C:/Users/omarg/Documents/GitHub/Entrenamiento_DataScience/dataset/data.yaml",
+    data=str(PROJECT_DIR / "dataset" / "data.yaml"),
 
     # Entrenamiento
     epochs=20,
@@ -33,7 +37,7 @@ results = model.train(
     save_period=1,
 
     # Nombre del experimento
-    project="../experiments/yolov8",
+    project=str(PROJECT_DIR / "experiments" / "yolov8"),
     name="yolov8n_20epochs",
 
     # Early stopping

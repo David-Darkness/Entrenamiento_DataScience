@@ -29,7 +29,7 @@ MODEL_PATH = (
     BASE_DIR
     / "experiments"
     / "yolov8"
-    / "entrenamiento_02_20_epochs_definitivo"
+    / "yolov8n_20epochs-2"
     / "weights"
     / "best.pt"
 )
